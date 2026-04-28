@@ -80,7 +80,7 @@ export default function Home() {
     setHotelPool(h)
     setRestaurantPool(r)
     setAttractionPool(a)
-    setItinerary(generateItinerary(h.slice(0, 3), r, a, s.tripDays))
+    setItinerary(generateItinerary(h.slice(0, 3), r, a, s.duration))
 
     setShownHotels(h.slice(0, VISIBLE))
     setHotelCursor(VISIBLE)
@@ -189,16 +189,16 @@ export default function Home() {
             </div>
             <div>
               <p className="text-blue-600 font-medium mb-0.5">Duração</p>
-              <p className="text-slate-700">{summary.tripDays} {summary.tripDays === 1 ? 'dia' : 'dias'}</p>
+              <p className="text-slate-700">{summary.duration} {summary.duration === 1 ? 'dia' : 'dias'}</p>
             </div>
             <div>
               <p className="text-blue-600 font-medium mb-0.5">Objetivo</p>
-              <p className="text-slate-700">{summary.objective}</p>
+              <p className="text-slate-700">{summary.objectives.join(', ')}</p>
             </div>
-            {summary.budget !== null && (
+            {summary.preferences.budget !== undefined && (
               <div>
                 <p className="text-blue-600 font-medium mb-0.5">Orçamento</p>
-                <p className="text-slate-700">R$ {summary.budget} / dia</p>
+                <p className="text-slate-700">R$ {summary.preferences.budget} / dia</p>
               </div>
             )}
             {summary.interests.length > 0 && (

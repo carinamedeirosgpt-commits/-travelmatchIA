@@ -321,9 +321,12 @@ export type Attraction = {
 
 export type TripSummary = {
   destination: string
-  objective: string
-  budget: number | null
-  tripDays: number
+  duration: number
+  objectives: string[]
+  preferences: {
+    budget?: number
+    quality?: 'low' | 'medium' | 'high'
+  }
   interests: string[]
 }
 
@@ -775,11 +778,26 @@ export function parseTripSummary(text: string): TripSummary {
     ? `${CITIES[cityKey].display}, ${CITIES[cityKey].country}`
     : 'Não identificado'
 
-  const objectiveKey = detectObjective(text)
-  const objective = OBJECTIVE_LABELS[objectiveKey]
+  // Duration (default 3, cap at 14)
+  let duration = 3
+  const daysMatch = text.match(/(\d+)\s*dias?/i)
+  if (daysMatch) {
+    const parsed = parseInt(daysMatch[1], 10)
+    if (!isNaN(parsed)) duration = Math.min(Math.max(parsed, 1), 14)
+  }
 
-  // Detect budget as a number (e.g. "R$50", "50 reais", "€80")
-  let budget: number | null = null
+  // Multiple objectives — all that apply, in priority order
+  const objectives: string[] = []
+  if (/trabalho|negócio|reunião|conferência|congresso|business/.test(t)) objectives.push('Negócios')
+  if (/descanso|relaxar|tranquil|spa|paz|sossego/.test(t)) objectives.push('Descanso')
+  if (/turismo|pontos? turísticos?|sightseeing|conhecer|visitar|museu|galeria|templo|monumento|atração/.test(t)) objectives.push('Turismo')
+  if (/gastronomia|restaurante|culinária|comida|food|comer/.test(t)) objectives.push('Gastronomia')
+  if (/festa|balada|noite|bares|vida noturna|pub|club/.test(t)) objectives.push('Vida noturna')
+  if (/família|criança|kids|filho|filha|bebê/.test(t)) objectives.push('Família')
+  if (objectives.length === 0) objectives.push('Turismo')
+
+  // Preferences
+  let budget: number | undefined
   const budgetMatch = text.match(/(?:R\$|€)\s*(\d+(?:[.,]\d+)?)|(\d+(?:[.,]\d+)?)\s*reais?/i)
   if (budgetMatch) {
     const raw = (budgetMatch[1] ?? budgetMatch[2]).replace(',', '.')
@@ -787,15 +805,18 @@ export function parseTripSummary(text: string): TripSummary {
     if (!isNaN(parsed)) budget = parsed
   }
 
-  // Detect number of days (default 3, cap at 14)
-  let tripDays = 3
-  const daysMatch = text.match(/(\d+)\s*dias?/i)
-  if (daysMatch) {
-    const parsed = parseInt(daysMatch[1], 10)
-    if (!isNaN(parsed)) tripDays = Math.min(Math.max(parsed, 1), 14)
+  let quality: 'low' | 'medium' | 'high' | undefined
+  if (/comer bem|alta gastronomia|fine dining|michelin|luxo|melhor restaurante|bom restaurante|qualidade alta/.test(t)) {
+    quality = 'high'
+  } else if (/barato|econômico|baixo custo|sem gastar muito|acessível/.test(t)) {
+    quality = 'low'
   }
 
-  // Detect multiple interests
+  const preferences: TripSummary['preferences'] = {}
+  if (budget !== undefined) preferences.budget = budget
+  if (quality !== undefined) preferences.quality = quality
+
+  // Interests (broader tags, including POIs)
   const interests: string[] = []
   if (/turismo|pontos turísticos|atrações|sightseeing|conhecer|visitar/.test(t)) interests.push('Turismo')
   if (/trabalho|negócio|conferência|congresso/.test(t)) interests.push('Negócios')
@@ -814,7 +835,7 @@ export function parseTripSummary(text: string): TripSummary {
     }
   }
 
-  return { destination, objective, budget, tripDays, interests }
+  return { destination, duration, objectives, preferences, interests }
 }
 
 export function getRestaurants(text: string): Restaurant[] {
