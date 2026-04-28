@@ -18,6 +18,19 @@ function detectObjective(text: string): string {
   return 'turismo'
 }
 
+// Returns every matching objective key — used for multi-objective recommendation blending
+function detectObjectives(text: string): string[] {
+  const t = text.toLowerCase()
+  const found: string[] = []
+  if (/trabalho|negócio|reunião|conferência|congresso|business/.test(t)) found.push('trabalho')
+  if (/descanso|relaxar|tranquil|spa|paz|sossego/.test(t)) found.push('descanso')
+  if (/turismo|pontos? turísticos?|sightseeing|conhecer|visitar|museu|galeria|templo|monumento|atração/.test(t)) found.push('turismo')
+  if (/gastronomia|restaurante|culinária|comida|food|comer/.test(t)) found.push('gastronomia')
+  if (/festa|balada|noite|bares|vida noturna|pub|club/.test(t)) found.push('festa')
+  if (/família|criança|kids|filho|filha|bebê/.test(t)) found.push('familia')
+  return found.length > 0 ? found : ['turismo']
+}
+
 export type Recommendation = {
   name: string
   location: string
@@ -218,7 +231,7 @@ export const CITIES: Record<string, CityConfig> = {
 }
 
 export function getRecommendations(text: string): Recommendation[] {
-  const objective = detectObjective(text)
+  const objectives = detectObjectives(text)
   const cityKey = Object.keys(CITIES).find(k => CITIES[k].keywords.test(text))
 
   if (!cityKey) return []
@@ -227,6 +240,7 @@ export function getRecommendations(text: string): Recommendation[] {
   const orderedNeighborhoods: string[] = []
   const neighborhoodSources = new Map<string, string>()
 
+  // 1. POI mentions — highest priority
   for (const poi of city.pois) {
     if (poi.pattern.test(text) && !neighborhoodSources.has(poi.neighborhood)) {
       neighborhoodSources.set(poi.neighborhood, `poi:${poi.displayName}`)
@@ -234,6 +248,7 @@ export function getRecommendations(text: string): Recommendation[] {
     }
   }
 
+  // 2. Direct neighborhood mentions
   for (const np of city.neighborhoodPatterns) {
     if (np.pattern.test(text) && !neighborhoodSources.has(np.key)) {
       neighborhoodSources.set(np.key, 'direct')
@@ -241,20 +256,35 @@ export function getRecommendations(text: string): Recommendation[] {
     }
   }
 
-  const defaults = city.objectiveDefaults[objective] ?? city.objectiveDefaults['turismo']
-  for (const n of defaults) {
-    if (!neighborhoodSources.has(n)) {
-      neighborhoodSources.set(n, `objective:${objective}`)
-      orderedNeighborhoods.push(n)
+  // 3. Round-robin across all detected objectives' default neighborhoods
+  //    e.g. turismo=[monti,centro,prati] + gastronomia=[trastevere,monti,centro]
+  //    → monti(T), trastevere(G), centro(T), prati(T)   (duplicates skipped)
+  const defaultLists = objectives.map(
+    obj => city.objectiveDefaults[obj] ?? city.objectiveDefaults['turismo']
+  )
+  const maxLen = Math.max(...defaultLists.map(l => l.length))
+  for (let i = 0; i < maxLen; i++) {
+    for (const list of defaultLists) {
+      const n = list[i]
+      if (n && !neighborhoodSources.has(n)) {
+        neighborhoodSources.set(n, `objective:${objectives.join('+')}`)
+        orderedNeighborhoods.push(n)
+      }
     }
   }
 
+  // 4. Remaining neighborhoods — fill the pool tail
   for (const nKey of Object.keys(city.neighborhoods)) {
     if (!neighborhoodSources.has(nKey)) {
       neighborhoodSources.set(nKey, 'extra')
       orderedNeighborhoods.push(nKey)
     }
   }
+
+  // Build combined objective label for reason prefix
+  const objectiveLabel = objectives
+    .map(o => OBJECTIVE_LABELS[o] ?? o)
+    .join(' e ')
 
   const results: Recommendation[] = []
 
@@ -269,8 +299,8 @@ export function getRecommendations(text: string): Recommendation[] {
         prefix = `Você mencionou ${source.slice(4)} — `
       } else if (source === 'direct') {
         prefix = `Em ${neighborhood.display}, como você queria — `
-      } else if (source !== 'extra') {
-        prefix = `Para ${OBJECTIVE_LABELS[objective]} em ${city.display}, ${neighborhood.display} é excelente — `
+      } else if (source.startsWith('objective:')) {
+        prefix = `Para ${objectiveLabel} em ${city.display}, ${neighborhood.display} é excelente — `
       } else {
         prefix = `Em ${neighborhood.display}, ${city.display} — `
       }
