@@ -11,6 +11,7 @@ function detectObjective(text: string): string {
   const t = text.toLowerCase()
   if (/trabalho|negócio|reunião|conferência|congresso|business/.test(t)) return 'trabalho'
   if (/descanso|relaxar|tranquil|spa|paz|sossego/.test(t)) return 'descanso'
+  if (/turismo|pontos? turísticos?|sightseeing|conhecer|visitar|museu|galeria|templo|monumento|atração/.test(t)) return 'turismo'
   if (/gastronomia|restaurante|culinária|comida|food|comer/.test(t)) return 'gastronomia'
   if (/festa|balada|noite|bares|vida noturna|pub|club/.test(t)) return 'festa'
   if (/família|criança|kids|filho|filha|bebê/.test(t)) return 'familia'
