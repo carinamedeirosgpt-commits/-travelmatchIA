@@ -60,7 +60,6 @@ export default function Home() {
   // visible slots (null = dismissed with no replacement available)
   const [shownHotels, setShownHotels] = useState<(Recommendation | null)[]>([])
   const [hotelCursor, setHotelCursor] = useState(0)
-  const [shownRestaurants, setShownRestaurants] = useState<(Restaurant | null)[]>([])
   const [restaurantCursor, setRestaurantCursor] = useState(0)
   const [shownAttractions, setShownAttractions] = useState<(Attraction | null)[]>([])
   const [attractionCursor, setAttractionCursor] = useState(0)
@@ -85,8 +84,7 @@ export default function Home() {
 
     setShownHotels(h.slice(0, VISIBLE))
     setHotelCursor(VISIBLE)
-    setShownRestaurants(r.slice(0, VISIBLE))
-    setRestaurantCursor(VISIBLE)
+    setRestaurantCursor(0)
     setShownAttractions(a.slice(0, VISIBLE))
     setAttractionCursor(VISIBLE)
 
@@ -109,17 +107,13 @@ export default function Home() {
     })
   }
 
-  function dismissRestaurant(slotIdx: number) {
-    setShownRestaurants(prev => {
-      const next = [...prev]
-      if (restaurantCursor < restaurantPool.length) {
-        next[slotIdx] = restaurantPool[restaurantCursor]
-        setRestaurantCursor(c => c + 1)
-      } else {
-        next[slotIdx] = null
-      }
-      return next
-    })
+  function acceptRestaurant(r: Restaurant) {
+    setSelectedRestaurants(prev => [...prev, r])
+    setRestaurantCursor(c => c + 1)
+  }
+
+  function refuseRestaurant() {
+    setRestaurantCursor(c => c + 1)
   }
 
   function dismissAttraction(slotIdx: number) {
@@ -139,14 +133,6 @@ export default function Home() {
     setSelectedHotel(prev => prev?.name === rec.name ? null : rec)
   }
 
-  function toggleRestaurant(r: Restaurant) {
-    setSelectedRestaurants(prev =>
-      prev.some(x => x.name === r.name)
-        ? prev.filter(x => x.name !== r.name)
-        : [...prev, r]
-    )
-  }
-
   function toggleAttraction(a: Attraction) {
     setSelectedAttractions(prev =>
       prev.some(x => x.name === a.name)
@@ -156,8 +142,9 @@ export default function Home() {
   }
 
   const allHotelsDismissed = shownHotels.length > 0 && shownHotels.every(h => h === null)
-  const allRestaurantsDismissed = shownRestaurants.length > 0 && shownRestaurants.every(r => r === null)
   const allAttractionsDismissed = shownAttractions.length > 0 && shownAttractions.every(a => a === null)
+  const currentRestaurant = restaurantPool[restaurantCursor] ?? null
+  const restaurantsDone = restaurantPool.length > 0 && restaurantCursor >= restaurantPool.length
 
   return (
     <main className="min-h-screen flex flex-col items-center px-4 py-16">
@@ -299,66 +286,81 @@ export default function Home() {
         </div>
       )}
 
-      {/* ── Etapa 2: Restaurantes ───────────────────────────────────────── */}
+      {/* ── Etapa 2: Restaurantes (modo swipe) ─────────────────────────── */}
       {step >= 3 && (
         <div className="w-full max-w-2xl mt-10">
           <StepHeader
             number={2}
             title="Restaurantes sugeridos"
-            subtitle="Para explorar a gastronomia local durante a viagem"
+            subtitle="Aceite ou recuse cada sugestão para montar sua lista"
           />
-          <div className="flex flex-col gap-5">
-            {allRestaurantsDismissed ? (
-              <p className="text-slate-500 text-sm">Não temos mais opções para essa categoria no momento.</p>
-            ) : restaurantPool.length === 0 ? (
-              <p className="text-slate-500 text-sm">Nenhum restaurante encontrado para este destino ainda.</p>
-            ) : shownRestaurants.map((r, i) => {
-              if (r === null) return null
-              return (
-                <div key={r.name} className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 flex flex-col gap-3">
-                  <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <h3 className="text-lg font-bold text-slate-900">{r.name}</h3>
-                      <p className="text-slate-500 text-sm">{r.cuisine} · {r.neighborhood}</p>
-                    </div>
-                    <span className="shrink-0 text-emerald-700 font-bold text-base bg-emerald-50 rounded-lg px-3 py-1">
-                      {r.priceRange}
-                    </span>
+
+          {restaurantPool.length === 0 ? (
+            <p className="text-slate-500 text-sm">Nenhum restaurante encontrado para este destino ainda.</p>
+          ) : restaurantsDone ? (
+            <div className="bg-slate-50 border border-slate-200 rounded-2xl p-8 text-center">
+              <p className="text-2xl mb-2">🍽️</p>
+              <p className="font-semibold text-slate-700 mb-1">Você revisou todos os restaurantes</p>
+              <p className="text-sm text-slate-400">
+                {selectedRestaurants.length === 0
+                  ? 'Nenhum restaurante adicionado.'
+                  : `${selectedRestaurants.length} restaurante${selectedRestaurants.length > 1 ? 's' : ''} adicionado${selectedRestaurants.length > 1 ? 's' : ''} à sua viagem.`}
+              </p>
+            </div>
+          ) : currentRestaurant && (
+            <div className="flex flex-col gap-4">
+              {/* progress */}
+              <div className="flex items-center justify-between text-xs text-slate-400">
+                <span>{restaurantCursor + 1} de {restaurantPool.length}</span>
+                <span>{selectedRestaurants.length} aceito{selectedRestaurants.length !== 1 ? 's' : ''}</span>
+              </div>
+              <div className="w-full bg-slate-100 rounded-full h-1.5">
+                <div
+                  className="bg-emerald-400 h-1.5 rounded-full transition-all"
+                  style={{ width: `${((restaurantCursor) / restaurantPool.length) * 100}%` }}
+                />
+              </div>
+
+              {/* card */}
+              <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 flex flex-col gap-3">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <h3 className="text-lg font-bold text-slate-900">{currentRestaurant.name}</h3>
+                    <p className="text-slate-500 text-sm">{currentRestaurant.cuisine} · {currentRestaurant.neighborhood}</p>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <Stars rating={r.rating} />
-                    <span className="text-xs text-slate-400">{r.reviewCount.toLocaleString('pt-BR')} avaliações</span>
-                  </div>
-                  {r.reviewSnippet && (
-                    <p className="text-xs text-slate-500 italic border-l-2 border-emerald-200 pl-3">
-                      &ldquo;{r.reviewSnippet}&rdquo;
-                    </p>
-                  )}
-                  <p className="text-slate-600 text-sm leading-relaxed border-t border-slate-100 pt-3">
-                    {r.description}
-                  </p>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => toggleRestaurant(r)}
-                      className={`flex-1 rounded-lg py-2 text-sm font-semibold transition-colors ${
-                        selectedRestaurants.some(x => x.name === r.name)
-                          ? 'bg-emerald-600 text-white'
-                          : 'border border-emerald-500 text-emerald-600 hover:bg-emerald-50'
-                      }`}
-                    >
-                      {selectedRestaurants.some(x => x.name === r.name) ? 'Adicionado' : 'Adicionar'}
-                    </button>
-                    <button
-                      onClick={() => dismissRestaurant(i)}
-                      className="rounded-lg py-2 px-3 text-sm font-semibold border border-slate-200 text-slate-500 hover:bg-slate-50 transition-colors whitespace-nowrap"
-                    >
-                      Ver outra opção
-                    </button>
-                  </div>
+                  <span className="shrink-0 text-emerald-700 font-bold text-base bg-emerald-50 rounded-lg px-3 py-1">
+                    {currentRestaurant.priceRange}
+                  </span>
                 </div>
-              )
-            })}
-          </div>
+                <div className="flex items-center gap-3">
+                  <Stars rating={currentRestaurant.rating} />
+                  <span className="text-xs text-slate-400">{currentRestaurant.reviewCount.toLocaleString('pt-BR')} avaliações</span>
+                </div>
+                {currentRestaurant.reviewSnippet && (
+                  <p className="text-xs text-slate-500 italic border-l-2 border-emerald-200 pl-3">
+                    &ldquo;{currentRestaurant.reviewSnippet}&rdquo;
+                  </p>
+                )}
+                <p className="text-slate-600 text-sm leading-relaxed border-t border-slate-100 pt-3">
+                  {currentRestaurant.description}
+                </p>
+                <div className="flex gap-3 mt-1">
+                  <button
+                    onClick={refuseRestaurant}
+                    className="flex-1 rounded-xl py-3 text-sm font-semibold border-2 border-slate-200 text-slate-500 hover:border-rose-300 hover:text-rose-500 hover:bg-rose-50 transition-colors"
+                  >
+                    ✕ Recusar
+                  </button>
+                  <button
+                    onClick={() => acceptRestaurant(currentRestaurant)}
+                    className="flex-1 rounded-xl py-3 text-sm font-semibold bg-emerald-500 text-white hover:bg-emerald-600 transition-colors"
+                  >
+                    ✓ Aceitar
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
