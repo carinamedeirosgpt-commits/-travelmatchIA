@@ -31,6 +31,24 @@ function detectObjectives(text: string): string[] {
   return found.length > 0 ? found : ['turismo']
 }
 
+function extractPreferences(text: string): { quality: 'low' | 'medium' | 'high' | undefined; budget: number | undefined } {
+  const t = text.toLowerCase()
+  let quality: 'low' | 'medium' | 'high' | undefined
+  if (/comer bem|alta gastronomia|fine dining|michelin|luxo|melhor restaurante|bom restaurante|qualidade alta/.test(t)) {
+    quality = 'high'
+  } else if (/barato|econômico|baixo custo|sem gastar muito|acessível/.test(t)) {
+    quality = 'low'
+  }
+  let budget: number | undefined
+  const match = text.match(/(?:R\$|€)\s*(\d+(?:[.,]\d+)?)|(\d+(?:[.,]\d+)?)\s*reais?/i)
+  if (match) {
+    const raw = (match[1] ?? match[2]).replace(',', '.')
+    const parsed = parseFloat(raw)
+    if (!isNaN(parsed)) budget = parsed
+  }
+  return { quality, budget }
+}
+
 export type Recommendation = {
   name: string
   location: string
@@ -232,6 +250,7 @@ export const CITIES: Record<string, CityConfig> = {
 
 export function getRecommendations(text: string): Recommendation[] {
   const objectives = detectObjectives(text)
+  const { quality } = extractPreferences(text)
   const cityKey = Object.keys(CITIES).find(k => CITIES[k].keywords.test(text))
 
   if (!cityKey) return []
@@ -256,12 +275,11 @@ export function getRecommendations(text: string): Recommendation[] {
     }
   }
 
-  // 3. Round-robin across all detected objectives' default neighborhoods
-  //    e.g. turismo=[monti,centro,prati] + gastronomia=[trastevere,monti,centro]
-  //    → monti(T), trastevere(G), centro(T), prati(T)   (duplicates skipped)
+  // 3. Round-robin across all detected objectives
   const defaultLists = objectives.map(
     obj => city.objectiveDefaults[obj] ?? city.objectiveDefaults['turismo']
   )
+  const objectiveDefaultSets = defaultLists.map(l => new Set<string>(l))
   const maxLen = Math.max(...defaultLists.map(l => l.length))
   for (let i = 0; i < maxLen; i++) {
     for (const list of defaultLists) {
@@ -273,7 +291,7 @@ export function getRecommendations(text: string): Recommendation[] {
     }
   }
 
-  // 4. Remaining neighborhoods — fill the pool tail
+  // 4. Remaining neighborhoods — pool tail
   for (const nKey of Object.keys(city.neighborhoods)) {
     if (!neighborhoodSources.has(nKey)) {
       neighborhoodSources.set(nKey, 'extra')
@@ -281,43 +299,61 @@ export function getRecommendations(text: string): Recommendation[] {
     }
   }
 
-  // Build combined objective label for reason prefix
-  const objectiveLabel = objectives
-    .map(o => OBJECTIVE_LABELS[o] ?? o)
-    .join(' e ')
+  const objectiveLabel = objectives.map(o => OBJECTIVE_LABELS[o] ?? o).join(' e ')
 
-  const results: Recommendation[] = []
+  // Build pool with scores; sort after
+  const scored: Array<{ rec: Recommendation; score: number }> = []
 
   for (const nKey of orderedNeighborhoods) {
     const neighborhood = city.neighborhoods[nKey]
     if (!neighborhood) continue
     const source = neighborhoodSources.get(nKey) ?? 'extra'
 
-    for (const hotel of neighborhood.hotels) {
-      let prefix = ''
-      if (source.startsWith('poi:')) {
-        prefix = `Você mencionou ${source.slice(4)} — `
-      } else if (source === 'direct') {
-        prefix = `Em ${neighborhood.display}, como você queria — `
-      } else if (source.startsWith('objective:')) {
-        prefix = `Para ${objectiveLabel} em ${city.display}, ${neighborhood.display} é excelente — `
-      } else {
-        prefix = `Em ${neighborhood.display}, ${city.display} — `
-      }
+    // Base score from source type
+    let baseScore = 0
+    if (source.startsWith('poi:')) {
+      baseScore = 4
+    } else if (source === 'direct') {
+      baseScore = 3
+    } else if (source.startsWith('objective:')) {
+      const coverage = objectiveDefaultSets.filter(set => set.has(nKey)).length
+      baseScore = 2
+      if (coverage > 1) baseScore += 1  // +1 for multi-objective neighborhood
+    }
 
-      results.push({
-        name: hotel.name,
-        location: `${neighborhood.display}, ${city.display}, ${city.country}`,
-        price: hotel.price,
-        rating: hotel.rating,
-        reason: prefix + hotel.baseReason,
-        reviewCount: hotel.reviewCount,
-        reviewSnippet: hotel.reviewSnippet,
+    let prefix = ''
+    if (source.startsWith('poi:')) {
+      prefix = `Você mencionou ${source.slice(4)} — `
+    } else if (source === 'direct') {
+      prefix = `Em ${neighborhood.display}, como você queria — `
+    } else if (source.startsWith('objective:')) {
+      prefix = `Para ${objectiveLabel} em ${city.display}, ${neighborhood.display} é excelente — `
+    } else {
+      prefix = `Em ${neighborhood.display}, ${city.display} — `
+    }
+
+    for (const hotel of neighborhood.hotels) {
+      let score = baseScore
+      if (quality === 'high' && hotel.rating >= 4.7) score += 1
+      if (quality === 'low' && hotel.rating < 4.5) score += 1
+
+      scored.push({
+        score,
+        rec: {
+          name: hotel.name,
+          location: `${neighborhood.display}, ${city.display}, ${city.country}`,
+          price: hotel.price,
+          rating: hotel.rating,
+          reason: prefix + hotel.baseReason,
+          reviewCount: hotel.reviewCount,
+          reviewSnippet: hotel.reviewSnippet,
+        },
       })
     }
   }
 
-  return results
+  scored.sort((a, b) => b.score - a.score || b.rec.rating - a.rec.rating)
+  return scored.map(s => s.rec)
 }
 
 // ── Restaurant ────────────────────────────────────────────────────────────────
@@ -871,13 +907,79 @@ export function parseTripSummary(text: string): TripSummary {
 export function getRestaurants(text: string): Restaurant[] {
   const cityKey = Object.keys(CITIES).find(k => CITIES[k].keywords.test(text))
   if (!cityKey) return []
-  return CITY_EXTRAS[cityKey]?.restaurants ?? []
+  const restaurants = CITY_EXTRAS[cityKey]?.restaurants ?? []
+  if (restaurants.length === 0) return []
+
+  const objectives = detectObjectives(text)
+  const { quality } = extractPreferences(text)
+  const city = CITIES[cityKey]
+
+  // Build set of relevant neighborhood display names (lowercase) from all objective defaults
+  const relevantNeighborhoods = new Set<string>()
+  for (const obj of objectives) {
+    for (const nKey of city.objectiveDefaults[obj] ?? city.objectiveDefaults['turismo']) {
+      const display = city.neighborhoods[nKey]?.display.toLowerCase()
+      if (display) relevantNeighborhoods.add(display)
+    }
+  }
+
+  const hasGastronomy = objectives.includes('gastronomia')
+
+  const scored = restaurants.map(r => {
+    let score = 0
+    if (hasGastronomy) score += 2                            // +2 atende objetivo gastronomia
+    if (hasGastronomy && objectives.length > 1) score += 1  // +1 múltiplos objetivos
+    if (relevantNeighborhoods.has(r.neighborhood.toLowerCase())) score += 1  // +1 bairro relevante
+    if (quality === 'high' && r.rating >= 4.7) score += 1
+    if (quality === 'low' && r.priceRange.length <= 1) score += 1  // € = tier mais barato
+    return { r, score }
+  })
+
+  scored.sort((a, b) => b.score - a.score || b.r.rating - a.r.rating)
+  return scored.map(s => s.r)
 }
 
 export function getAttractions(text: string): Attraction[] {
   const cityKey = Object.keys(CITIES).find(k => CITIES[k].keywords.test(text))
   if (!cityKey) return []
-  return CITY_EXTRAS[cityKey]?.attractions ?? []
+  const attractions = CITY_EXTRAS[cityKey]?.attractions ?? []
+  if (attractions.length === 0) return []
+
+  const objectives = detectObjectives(text)
+  const city = CITIES[cityKey]
+
+  // Relevant neighborhoods from objective defaults
+  const relevantNeighborhoods = new Set<string>()
+  for (const obj of objectives) {
+    for (const nKey of city.objectiveDefaults[obj] ?? city.objectiveDefaults['turismo']) {
+      const display = city.neighborhoods[nKey]?.display.toLowerCase()
+      if (display) relevantNeighborhoods.add(display)
+    }
+  }
+
+  // Neighborhoods of explicitly mentioned POIs → extra boost
+  const mentionedNeighborhoods = new Set<string>()
+  for (const poi of city.pois) {
+    if (poi.pattern.test(text)) {
+      const display = city.neighborhoods[poi.neighborhood]?.display.toLowerCase()
+      if (display) mentionedNeighborhoods.add(display)
+    }
+  }
+
+  const hasTurismo = objectives.includes('turismo')
+
+  const scored = attractions.map(a => {
+    let score = 0
+    if (hasTurismo) score += 2                             // +2 atende objetivo turismo
+    if (hasTurismo && objectives.length > 1) score += 1   // +1 múltiplos objetivos
+    if (relevantNeighborhoods.has(a.neighborhood.toLowerCase())) score += 1  // +1 bairro relevante
+    if (mentionedNeighborhoods.has(a.neighborhood.toLowerCase())) score += 2 // +2 POI mencionado
+    if (a.reviewCount >= 30000) score += 1                 // +1 atração muito popular
+    return { a, score }
+  })
+
+  scored.sort((a, b) => b.score - a.score || b.a.reviewCount - a.a.reviewCount)
+  return scored.map(s => s.a)
 }
 
 // ── Itinerary ─────────────────────────────────────────────────────────────────
