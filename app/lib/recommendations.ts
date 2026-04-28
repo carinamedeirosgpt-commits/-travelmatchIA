@@ -562,8 +562,12 @@ export function generateItinerary(
 ): ItineraryDay[] {
   if (attractions.length === 0 || restaurants.length === 0) return []
 
+  function pick<T>(arr: T[], idx: number): T {
+    return arr[idx % arr.length]
+  }
+
   function neighborhood(idx: number): string {
-    return (hotels[idx] ?? hotels[0])?.location.split(',')[0].trim() ?? 'destino'
+    return pick(hotels.length > 0 ? hotels : [], idx)?.location.split(',')[0].trim() ?? 'destino'
   }
 
   function firstSentence(text: string): string {
@@ -580,30 +584,30 @@ export function generateItinerary(
       slots: [
         {
           period: 'Manhã',
-          title: a[0].name,
-          subtitle: `${a[0].type} · ${a[0].neighborhood}`,
-          note: `Duração: ${a[0].duration}. ${firstSentence(a[0].description)}`,
+          title: pick(a, 0).name,
+          subtitle: `${pick(a, 0).type} · ${pick(a, 0).neighborhood}`,
+          note: `Duração: ${pick(a, 0).duration}. ${firstSentence(pick(a, 0).description)}`,
           type: 'attraction',
         },
         {
           period: 'Almoço',
-          title: r[0].name,
-          subtitle: `${r[0].cuisine} · ${r[0].neighborhood}`,
-          note: firstSentence(r[0].description),
+          title: pick(r, 0).name,
+          subtitle: `${pick(r, 0).cuisine} · ${pick(r, 0).neighborhood}`,
+          note: firstSentence(pick(r, 0).description),
           type: 'restaurant',
         },
         {
           period: 'Tarde',
-          title: a[1].name,
-          subtitle: `${a[1].type} · ${a[1].neighborhood}`,
-          note: `Duração: ${a[1].duration}. ${firstSentence(a[1].description)}`,
+          title: pick(a, 1).name,
+          subtitle: `${pick(a, 1).type} · ${pick(a, 1).neighborhood}`,
+          note: `Duração: ${pick(a, 1).duration}. ${firstSentence(pick(a, 1).description)}`,
           type: 'attraction',
         },
         {
           period: 'Noite',
-          title: r[1].name,
-          subtitle: `${r[1].cuisine} · ${r[1].neighborhood}`,
-          note: firstSentence(r[1].description),
+          title: pick(r, 1).name,
+          subtitle: `${pick(r, 1).cuisine} · ${pick(r, 1).neighborhood}`,
+          note: firstSentence(pick(r, 1).description),
           type: 'restaurant',
         },
       ],
@@ -614,16 +618,16 @@ export function generateItinerary(
       slots: [
         {
           period: 'Manhã',
-          title: a[2].name,
-          subtitle: `${a[2].type} · ${a[2].neighborhood}`,
-          note: `Duração: ${a[2].duration}. ${firstSentence(a[2].description)}`,
+          title: pick(a, 2).name,
+          subtitle: `${pick(a, 2).type} · ${pick(a, 2).neighborhood}`,
+          note: `Duração: ${pick(a, 2).duration}. ${firstSentence(pick(a, 2).description)}`,
           type: 'attraction',
         },
         {
           period: 'Almoço',
-          title: r[2].name,
-          subtitle: `${r[2].cuisine} · ${r[2].neighborhood}`,
-          note: firstSentence(r[2].description),
+          title: pick(r, 2).name,
+          subtitle: `${pick(r, 2).cuisine} · ${pick(r, 2).neighborhood}`,
+          note: firstSentence(pick(r, 2).description),
           type: 'restaurant',
         },
         {
@@ -635,8 +639,8 @@ export function generateItinerary(
         },
         {
           period: 'Noite',
-          title: r[0].name,
-          subtitle: `${r[0].cuisine} · ${r[0].neighborhood}`,
+          title: pick(r, 0).name,
+          subtitle: `${pick(r, 0).cuisine} · ${pick(r, 0).neighborhood}`,
           note: 'Retorne para jantar — experimente um prato diferente do almoço de ontem.',
           type: 'restaurant',
         },
@@ -655,9 +659,9 @@ export function generateItinerary(
         },
         {
           period: 'Almoço',
-          title: r[1].name,
-          subtitle: `${r[1].cuisine} · ${r[1].neighborhood}`,
-          note: firstSentence(r[1].description),
+          title: pick(r, 1).name,
+          subtitle: `${pick(r, 1).cuisine} · ${pick(r, 1).neighborhood}`,
+          note: firstSentence(pick(r, 1).description),
           type: 'restaurant',
         },
         {
@@ -669,8 +673,8 @@ export function generateItinerary(
         },
         {
           period: 'Noite',
-          title: r[2].name,
-          subtitle: `${r[2].cuisine} · ${r[2].neighborhood}`,
+          title: pick(r, 2).name,
+          subtitle: `${pick(r, 2).cuisine} · ${pick(r, 2).neighborhood}`,
           note: 'Jantar de despedida — finalize a viagem com a melhor experiência gastronômica do destino.',
           type: 'restaurant',
         },
