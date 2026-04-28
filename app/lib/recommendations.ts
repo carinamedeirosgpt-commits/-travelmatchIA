@@ -341,3 +341,200 @@ export function getRecommendations(text: string): Recommendation[] {
 
   return results
 }
+
+// ── Restaurant ────────────────────────────────────────────────────────────────
+
+export type Restaurant = {
+  name: string
+  cuisine: string
+  neighborhood: string
+  priceRange: string
+  rating: number
+  description: string
+}
+
+// ── Attraction ────────────────────────────────────────────────────────────────
+
+export type Attraction = {
+  name: string
+  type: string
+  neighborhood: string
+  duration: string
+  price: string
+  description: string
+}
+
+// ── Trip summary ──────────────────────────────────────────────────────────────
+
+export type TripSummary = {
+  destination: string
+  objective: string
+  budget: string | null
+  interests: string[]
+}
+
+// ── City extras data ──────────────────────────────────────────────────────────
+
+const CITY_EXTRAS: Record<string, { restaurants: Restaurant[]; attractions: Attraction[] }> = {
+  roma: {
+    restaurants: [
+      {
+        name: 'Da Enzo al 29',
+        cuisine: 'Italiana tradicional',
+        neighborhood: 'Trastevere',
+        priceRange: '€€',
+        rating: 4.8,
+        description: 'Trattoria familiar no coração do Trastevere — cacio e pepe e carbonara do jeito que devem ser feitos. Fila na porta todos os dias.',
+      },
+      {
+        name: 'Pizzarium Bonci',
+        cuisine: 'Pizza al taglio',
+        neighborhood: 'Prati',
+        priceRange: '€',
+        rating: 4.7,
+        description: 'Gabri Bonci transformou pizza de rua em arte. Vendida por peso, com coberturas que mudam todo dia — imperdível ao visitar o Vaticano.',
+      },
+      {
+        name: 'Il Pagliaccio',
+        cuisine: 'Alta gastronomia italiana',
+        neighborhood: 'Centro Histórico',
+        priceRange: '€€€€',
+        rating: 4.9,
+        description: 'Dois estrelas Michelin no centro histórico. Menu degustação que reinterpreta a cozinha romana com técnica de alto nível.',
+      },
+    ],
+    attractions: [
+      {
+        name: 'Coliseu e Fórum Romano',
+        type: 'Monumento histórico',
+        neighborhood: 'Monti',
+        duration: '3–4 horas',
+        price: '€ 16',
+        description: 'O anfiteatro mais famoso do mundo, construído em 72 d.C. O ingresso inclui o Fórum Romano e o Palatino — reserve com antecedência.',
+      },
+      {
+        name: 'Museus do Vaticano e Capela Sistina',
+        type: 'Museu',
+        neighborhood: 'Prati',
+        duration: '3–5 horas',
+        price: '€ 20',
+        description: 'O maior museu de arte sacra do mundo, com o teto da Sistina pintado por Michelangelo. Reserve com semanas de antecedência no verão.',
+      },
+      {
+        name: 'Fontana di Trevi e Pantheon',
+        type: 'Passeio a pé',
+        neighborhood: 'Centro Histórico',
+        duration: '2 horas',
+        price: 'Grátis (Pantheon € 5)',
+        description: 'Os dois pontos mais icônicos do centro histórico, a 10 min a pé um do outro. Melhor visitados cedo pela manhã ou à noite.',
+      },
+    ],
+  },
+
+  tokyo: {
+    restaurants: [
+      {
+        name: 'Ichiran Ramen',
+        cuisine: 'Ramen japonês',
+        neighborhood: 'Shinjuku',
+        priceRange: '¥',
+        rating: 4.6,
+        description: 'A rede de ramen mais famosa do Japão. Boxes individuais para comer concentrado, com personalização total do caldo. Funciona 24h.',
+      },
+      {
+        name: 'Sukiyabashi Jiro Honten',
+        cuisine: 'Sushi omakase',
+        neighborhood: 'Ginza',
+        priceRange: '¥¥¥¥¥',
+        rating: 5.0,
+        description: 'Três estrelas Michelin e inspiração do documentário "Jiro Dreams of Sushi". Menu único servido pelo mestre Jiro — reserva com meses de antecedência.',
+      },
+      {
+        name: 'Gonpachi Nishiazabu',
+        cuisine: 'Izakaya tradicional',
+        neighborhood: 'Shibuya',
+        priceRange: '¥¥¥',
+        rating: 4.5,
+        description: 'O izakaya que inspirou a cena do restaurante em Kill Bill. Robata, yakitori e saquê em ambiente histórico de dois andares com bambus.',
+      },
+    ],
+    attractions: [
+      {
+        name: 'Templo Senso-ji e Asakusa',
+        type: 'Templo histórico',
+        neighborhood: 'Asakusa',
+        duration: '2–3 horas',
+        price: 'Grátis',
+        description: 'O templo mais antigo de Tóquio, fundado em 645 d.C. A Nakamise-dori, rua de souvenir até o templo, é uma das mais fotogênicas do Japão.',
+      },
+      {
+        name: 'teamLab Planets',
+        type: 'Arte digital imersiva',
+        neighborhood: 'Shibuya',
+        duration: '1–2 horas',
+        price: '¥ 3.200',
+        description: 'Instalações onde você caminha descalço por espelhos infinitos, flores digitais e jardins de luz. Experiência única no mundo.',
+      },
+      {
+        name: 'Tokyo Skytree',
+        type: 'Mirante',
+        neighborhood: 'Asakusa',
+        duration: '1–2 horas',
+        price: '¥ 2.100',
+        description: 'A torre mais alta do Japão (634 m) com vista de 360° da cidade. Em dia claro dá para ver o Monte Fuji. Melhor ao anoitecer.',
+      },
+    ],
+  },
+}
+
+// ── Public functions ──────────────────────────────────────────────────────────
+
+export function parseTripSummary(text: string): TripSummary {
+  const t = text.toLowerCase()
+
+  const cityKey = Object.keys(CITIES).find(k => CITIES[k].keywords.test(text))
+  const destination = cityKey
+    ? `${CITIES[cityKey].display}, ${CITIES[cityKey].country}`
+    : 'Não identificado'
+
+  const objectiveKey = detectObjective(text)
+  const objective = OBJECTIVE_LABELS[objectiveKey]
+
+  let budget: string | null = null
+  if (/barato|econômico|budget|low.?cost/.test(t)) budget = 'Econômico'
+  else if (/luxo|premium|alto padrão/.test(t)) budget = 'Alto padrão'
+  else if (/moderado|médio|razoável/.test(t)) budget = 'Moderado'
+  else {
+    const match = text.match(/R\$\s*[\d.,]+|€\s*[\d.,]+|\$\s*[\d.,]+/)
+    if (match) budget = match[0]
+  }
+
+  const interests: string[] = []
+  if (/museu|arte|galeria|cultura/.test(t)) interests.push('Museus e cultura')
+  if (/gastronomia|restaurante|comida|culinária/.test(t)) interests.push('Gastronomia')
+  if (/natureza|trilha|parque|cachoeira/.test(t)) interests.push('Natureza')
+  if (/compras|shopping/.test(t)) interests.push('Compras')
+  if (/praia|mar|litoral/.test(t)) interests.push('Praia')
+  if (/festa|balada|vida noturna/.test(t)) interests.push('Vida noturna')
+  if (/família|criança|kids/.test(t)) interests.push('Família')
+  if (/aventura|radical|esporte/.test(t)) interests.push('Aventura')
+  if (cityKey) {
+    for (const poi of CITIES[cityKey].pois) {
+      if (poi.pattern.test(text)) interests.push(poi.displayName)
+    }
+  }
+
+  return { destination, objective, budget, interests }
+}
+
+export function getRestaurants(text: string): Restaurant[] {
+  const cityKey = Object.keys(CITIES).find(k => CITIES[k].keywords.test(text))
+  if (!cityKey) return []
+  return CITY_EXTRAS[cityKey]?.restaurants ?? []
+}
+
+export function getAttractions(text: string): Attraction[] {
+  const cityKey = Object.keys(CITIES).find(k => CITIES[k].keywords.test(text))
+  if (!cityKey) return []
+  return CITY_EXTRAS[cityKey]?.attractions ?? []
+}
