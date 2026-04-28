@@ -1,3 +1,22 @@
+const OBJECTIVE_LABELS: Record<string, string> = {
+  turismo:     'turismo',
+  trabalho:    'viagem de negócios',
+  descanso:    'descanso',
+  gastronomia: 'gastronomia',
+  festa:       'vida noturna',
+  familia:     'viagem em família',
+}
+
+function detectObjective(text: string): string {
+  const t = text.toLowerCase()
+  if (/trabalho|negócio|reunião|conferência|congresso|business/.test(t)) return 'trabalho'
+  if (/descanso|relaxar|tranquil|spa|paz|sossego/.test(t)) return 'descanso'
+  if (/gastronomia|restaurante|culinária|comida|food|comer/.test(t)) return 'gastronomia'
+  if (/festa|balada|noite|bares|vida noturna|pub|club/.test(t)) return 'festa'
+  if (/família|criança|kids|filho|filha|bebê/.test(t)) return 'familia'
+  return 'turismo'
+}
+
 export type Recommendation = {
   name: string
   location: string
@@ -265,4 +284,60 @@ export const CITIES: Record<string, CityConfig> = {
       familia:     ['asakusa', 'shinjuku', 'harajuku'],
     },
   },
+}
+
+export function getRecommendations(text: string): Recommendation[] {
+  const objective = detectObjective(text)
+  const cityKey = Object.keys(CITIES).find(k => CITIES[k].keywords.test(text))
+
+  if (!cityKey) return []
+
+  const city = CITIES[cityKey]
+  const sources = new Map<string, string>() // neighborhood key → reason source
+
+  for (const poi of city.pois) {
+    if (poi.pattern.test(text) && !sources.has(poi.neighborhood)) {
+      sources.set(poi.neighborhood, `poi:${poi.displayName}`)
+    }
+  }
+
+  for (const np of city.neighborhoodPatterns) {
+    if (np.pattern.test(text) && !sources.has(np.key)) {
+      sources.set(np.key, 'direct')
+    }
+  }
+
+  const defaults = city.objectiveDefaults[objective] ?? city.objectiveDefaults['turismo']
+  for (const n of defaults) {
+    if (sources.size >= 3) break
+    if (!sources.has(n)) sources.set(n, `objective:${objective}`)
+  }
+
+  const results: Recommendation[] = []
+
+  for (const [nKey, source] of Array.from(sources.entries()).slice(0, 3)) {
+    const neighborhood = city.neighborhoods[nKey]
+    if (!neighborhood || neighborhood.hotels.length === 0) continue
+
+    const hotel = neighborhood.hotels[0]
+
+    let prefix = ''
+    if (source.startsWith('poi:')) {
+      prefix = `Você mencionou ${source.slice(4)} — `
+    } else if (source === 'direct') {
+      prefix = `Em ${neighborhood.display}, como você queria — `
+    } else {
+      prefix = `Para ${OBJECTIVE_LABELS[objective]} em ${city.display}, ${neighborhood.display} é excelente — `
+    }
+
+    results.push({
+      name: hotel.name,
+      location: `${neighborhood.display}, ${city.display}, ${city.country}`,
+      price: hotel.price,
+      rating: hotel.rating,
+      reason: prefix + hotel.baseReason,
+    })
+  }
+
+  return results
 }
