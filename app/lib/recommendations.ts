@@ -407,7 +407,7 @@ const CITY_EXTRAS: Record<string, { restaurants: Restaurant[]; attractions: Attr
         neighborhood: 'Trastevere',
         priceRange: '€€',
         rating: 4.8,
-        mealType: 'both',
+        mealType: 'dinner',
         description: 'Trattoria familiar no coração do Trastevere — cacio e pepe e carbonara do jeito que devem ser feitos. Fila na porta todos os dias.',
         reviewCount: 6234,
         reviewSnippet: 'A carbonara mais autêntica que comi em Roma — impossível não pedir de novo.',
@@ -913,6 +913,7 @@ export function getRestaurants(text: string): Restaurant[] {
   const objectives = detectObjectives(text)
   const { quality } = extractPreferences(text)
   const city = CITIES[cityKey]
+  const t = text.toLowerCase()
 
   // Build set of relevant neighborhood display names (lowercase) from all objective defaults
   const relevantNeighborhoods = new Set<string>()
@@ -924,6 +925,8 @@ export function getRestaurants(text: string): Restaurant[] {
   }
 
   const hasGastronomy = objectives.includes('gastronomia')
+  const wantsLunch = /almoço|almoçar|lunch/.test(t)
+  const wantsDinner = /jantar|dinner/.test(t)
 
   const scored = restaurants.map(r => {
     let score = 0
@@ -932,6 +935,9 @@ export function getRestaurants(text: string): Restaurant[] {
     if (relevantNeighborhoods.has(r.neighborhood.toLowerCase())) score += 1  // +1 bairro relevante
     if (quality === 'high' && r.rating >= 4.7) score += 1
     if (quality === 'low' && r.priceRange.length <= 1) score += 1  // € = tier mais barato
+    // +1 se restaurante combina com o momento mencionado pelo usuário
+    if (wantsLunch && (r.mealType === 'lunch' || r.mealType === 'both')) score += 1
+    if (wantsDinner && (r.mealType === 'dinner' || r.mealType === 'both')) score += 1
     return { r, score }
   })
 

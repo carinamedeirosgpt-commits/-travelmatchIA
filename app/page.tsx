@@ -14,6 +14,71 @@ import {
   generateItinerary,
 } from './lib/recommendations'
 
+function SwipeCard({
+  restaurant: r,
+  cursor,
+  poolSize,
+  onAccept,
+  onRefuse,
+}: {
+  restaurant: Restaurant
+  cursor: number
+  poolSize: number
+  onAccept: () => void
+  onRefuse: () => void
+}) {
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="flex items-center justify-between text-xs text-slate-400">
+        <span>{cursor + 1} de {poolSize}</span>
+      </div>
+      <div className="w-full bg-slate-100 rounded-full h-1.5">
+        <div
+          className="bg-emerald-400 h-1.5 rounded-full transition-all"
+          style={{ width: `${(cursor / poolSize) * 100}%` }}
+        />
+      </div>
+      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 flex flex-col gap-3">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h3 className="text-lg font-bold text-slate-900">{r.name}</h3>
+            <p className="text-slate-500 text-sm">{r.cuisine} · {r.neighborhood}</p>
+          </div>
+          <span className="shrink-0 text-emerald-700 font-bold text-base bg-emerald-50 rounded-lg px-3 py-1">
+            {r.priceRange}
+          </span>
+        </div>
+        <div className="flex items-center gap-3">
+          <Stars rating={r.rating} />
+          <span className="text-xs text-slate-400">{r.reviewCount.toLocaleString('pt-BR')} avaliações</span>
+        </div>
+        {r.reviewSnippet && (
+          <p className="text-xs text-slate-500 italic border-l-2 border-emerald-200 pl-3">
+            &ldquo;{r.reviewSnippet}&rdquo;
+          </p>
+        )}
+        <p className="text-slate-600 text-sm leading-relaxed border-t border-slate-100 pt-3">
+          {r.description}
+        </p>
+        <div className="flex gap-3 mt-1">
+          <button
+            onClick={onRefuse}
+            className="flex-1 rounded-xl py-3 text-sm font-semibold border-2 border-slate-200 text-slate-500 hover:border-rose-300 hover:text-rose-500 hover:bg-rose-50 transition-colors"
+          >
+            ✕ Recusar
+          </button>
+          <button
+            onClick={onAccept}
+            className="flex-1 rounded-xl py-3 text-sm font-semibold bg-emerald-500 text-white hover:bg-emerald-600 transition-colors"
+          >
+            ✓ Aceitar
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function Stars({ rating }: { rating: number }) {
   return (
     <span className="flex items-center gap-1 text-amber-400 font-semibold text-sm">
@@ -60,7 +125,8 @@ export default function Home() {
   // visible slots (null = dismissed with no replacement available)
   const [shownHotels, setShownHotels] = useState<(Recommendation | null)[]>([])
   const [hotelCursor, setHotelCursor] = useState(0)
-  const [restaurantCursor, setRestaurantCursor] = useState(0)
+  const [lunchCursor, setLunchCursor] = useState(0)
+  const [dinnerCursor, setDinnerCursor] = useState(0)
   const [shownAttractions, setShownAttractions] = useState<(Attraction | null)[]>([])
   const [attractionCursor, setAttractionCursor] = useState(0)
 
@@ -84,7 +150,8 @@ export default function Home() {
 
     setShownHotels(h.slice(0, VISIBLE))
     setHotelCursor(VISIBLE)
-    setRestaurantCursor(0)
+    setLunchCursor(0)
+    setDinnerCursor(0)
     setShownAttractions(a.slice(0, VISIBLE))
     setAttractionCursor(VISIBLE)
 
@@ -107,14 +174,23 @@ export default function Home() {
     })
   }
 
-  function acceptRestaurant(r: Restaurant) {
-    setSelectedRestaurants(prev => [...prev, r])
-    setRestaurantCursor(c => c + 1)
-  }
+  const lunchPool = restaurantPool.filter(r => r.mealType === 'lunch' || r.mealType === 'both')
+  const dinnerPool = restaurantPool.filter(r => r.mealType === 'dinner' || r.mealType === 'both')
+  const currentLunch = lunchPool[lunchCursor] ?? null
+  const currentDinner = dinnerPool[dinnerCursor] ?? null
+  const lunchDone = lunchPool.length > 0 && lunchCursor >= lunchPool.length
+  const dinnerDone = dinnerPool.length > 0 && dinnerCursor >= dinnerPool.length
 
-  function refuseRestaurant() {
-    setRestaurantCursor(c => c + 1)
+  function acceptLunch(r: Restaurant) {
+    setSelectedRestaurants(prev => [...prev, r])
+    setLunchCursor(c => c + 1)
   }
+  function refuseLunch() { setLunchCursor(c => c + 1) }
+  function acceptDinner(r: Restaurant) {
+    setSelectedRestaurants(prev => [...prev, r])
+    setDinnerCursor(c => c + 1)
+  }
+  function refuseDinner() { setDinnerCursor(c => c + 1) }
 
   function dismissAttraction(slotIdx: number) {
     setShownAttractions(prev => {
@@ -143,8 +219,6 @@ export default function Home() {
 
   const allHotelsDismissed = shownHotels.length > 0 && shownHotels.every(h => h === null)
   const allAttractionsDismissed = shownAttractions.length > 0 && shownAttractions.every(a => a === null)
-  const currentRestaurant = restaurantPool[restaurantCursor] ?? null
-  const restaurantsDone = restaurantPool.length > 0 && restaurantCursor >= restaurantPool.length
 
   return (
     <main className="min-h-screen flex flex-col items-center px-4 py-16">
@@ -286,79 +360,65 @@ export default function Home() {
         </div>
       )}
 
-      {/* ── Etapa 2: Restaurantes (modo swipe) ─────────────────────────── */}
+      {/* ── Etapa 2: Restaurantes (almoço + jantar) ─────────────────────── */}
       {step >= 3 && (
         <div className="w-full max-w-2xl mt-10">
           <StepHeader
             number={2}
             title="Restaurantes sugeridos"
-            subtitle="Aceite ou recuse cada sugestão para montar sua lista"
+            subtitle="Aceite ou recuse sugestões de almoço e jantar"
           />
-
           {restaurantPool.length === 0 ? (
             <p className="text-slate-500 text-sm">Nenhum restaurante encontrado para este destino ainda.</p>
-          ) : restaurantsDone ? (
-            <div className="bg-slate-50 border border-slate-200 rounded-2xl p-8 text-center">
-              <p className="text-2xl mb-2">🍽️</p>
-              <p className="font-semibold text-slate-700 mb-1">Você revisou todos os restaurantes</p>
-              <p className="text-sm text-slate-400">
-                {selectedRestaurants.length === 0
-                  ? 'Nenhum restaurante adicionado.'
-                  : `${selectedRestaurants.length} restaurante${selectedRestaurants.length > 1 ? 's' : ''} adicionado${selectedRestaurants.length > 1 ? 's' : ''} à sua viagem.`}
-              </p>
-            </div>
-          ) : currentRestaurant && (
-            <div className="flex flex-col gap-4">
-              {/* progress */}
-              <div className="flex items-center justify-between text-xs text-slate-400">
-                <span>{restaurantCursor + 1} de {restaurantPool.length}</span>
-                <span>{selectedRestaurants.length} aceito{selectedRestaurants.length !== 1 ? 's' : ''}</span>
-              </div>
-              <div className="w-full bg-slate-100 rounded-full h-1.5">
-                <div
-                  className="bg-emerald-400 h-1.5 rounded-full transition-all"
-                  style={{ width: `${((restaurantCursor) / restaurantPool.length) * 100}%` }}
-                />
+          ) : (
+            <div className="flex flex-col gap-8">
+
+              {/* ── Almoço ── */}
+              <div>
+                <p className="text-xs font-semibold text-amber-500 uppercase tracking-widest mb-4">Almoço</p>
+                {lunchDone ? (
+                  <div className="bg-slate-50 border border-slate-200 rounded-2xl p-6 text-center">
+                    <p className="font-semibold text-slate-600 text-sm">Sugestões de almoço revisadas</p>
+                    <p className="text-xs text-slate-400 mt-1">
+                      {selectedRestaurants.filter(r => r.mealType === 'lunch' || r.mealType === 'both').length} aceito(s)
+                    </p>
+                  </div>
+                ) : lunchPool.length === 0 ? (
+                  <p className="text-slate-400 text-sm">Nenhuma sugestão de almoço disponível.</p>
+                ) : currentLunch && (
+                  <SwipeCard
+                    restaurant={currentLunch}
+                    cursor={lunchCursor}
+                    poolSize={lunchPool.length}
+                    onAccept={() => acceptLunch(currentLunch)}
+                    onRefuse={refuseLunch}
+                  />
+                )}
               </div>
 
-              {/* card */}
-              <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 flex flex-col gap-3">
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <h3 className="text-lg font-bold text-slate-900">{currentRestaurant.name}</h3>
-                    <p className="text-slate-500 text-sm">{currentRestaurant.cuisine} · {currentRestaurant.neighborhood}</p>
+              {/* ── Jantar ── */}
+              <div>
+                <p className="text-xs font-semibold text-blue-500 uppercase tracking-widest mb-4">Jantar</p>
+                {dinnerDone ? (
+                  <div className="bg-slate-50 border border-slate-200 rounded-2xl p-6 text-center">
+                    <p className="font-semibold text-slate-600 text-sm">Sugestões de jantar revisadas</p>
+                    <p className="text-xs text-slate-400 mt-1">
+                      {selectedRestaurants.filter(r => r.mealType === 'dinner' || r.mealType === 'both').length} aceito(s)
+                    </p>
                   </div>
-                  <span className="shrink-0 text-emerald-700 font-bold text-base bg-emerald-50 rounded-lg px-3 py-1">
-                    {currentRestaurant.priceRange}
-                  </span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <Stars rating={currentRestaurant.rating} />
-                  <span className="text-xs text-slate-400">{currentRestaurant.reviewCount.toLocaleString('pt-BR')} avaliações</span>
-                </div>
-                {currentRestaurant.reviewSnippet && (
-                  <p className="text-xs text-slate-500 italic border-l-2 border-emerald-200 pl-3">
-                    &ldquo;{currentRestaurant.reviewSnippet}&rdquo;
-                  </p>
+                ) : dinnerPool.length === 0 ? (
+                  <p className="text-slate-400 text-sm">Nenhuma sugestão de jantar disponível.</p>
+                ) : currentDinner && (
+                  <SwipeCard
+                    restaurant={currentDinner}
+                    cursor={dinnerCursor}
+                    poolSize={dinnerPool.length}
+                    onAccept={() => acceptDinner(currentDinner)}
+                    onRefuse={refuseDinner}
+                  />
                 )}
-                <p className="text-slate-600 text-sm leading-relaxed border-t border-slate-100 pt-3">
-                  {currentRestaurant.description}
-                </p>
-                <div className="flex gap-3 mt-1">
-                  <button
-                    onClick={refuseRestaurant}
-                    className="flex-1 rounded-xl py-3 text-sm font-semibold border-2 border-slate-200 text-slate-500 hover:border-rose-300 hover:text-rose-500 hover:bg-rose-50 transition-colors"
-                  >
-                    ✕ Recusar
-                  </button>
-                  <button
-                    onClick={() => acceptRestaurant(currentRestaurant)}
-                    className="flex-1 rounded-xl py-3 text-sm font-semibold bg-emerald-500 text-white hover:bg-emerald-600 transition-colors"
-                  >
-                    ✓ Aceitar
-                  </button>
-                </div>
               </div>
+
             </div>
           )}
         </div>
