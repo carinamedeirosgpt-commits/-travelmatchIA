@@ -53,6 +53,10 @@ export default function Home() {
   const [attractions, setAttractions] = useState<Attraction[]>([])
   const [itinerary, setItinerary] = useState<ItineraryDay[]>([])
 
+  const [selectedHotel, setSelectedHotel] = useState<Recommendation | null>(null)
+  const [selectedRestaurants, setSelectedRestaurants] = useState<Restaurant[]>([])
+  const [selectedAttractions, setSelectedAttractions] = useState<Attraction[]>([])
+
   function handleSearch() {
     if (!query.trim()) return
     const h = getRecommendations(query)
@@ -63,7 +67,30 @@ export default function Home() {
     setRestaurants(r)
     setAttractions(a)
     setItinerary(generateItinerary(h, r, a))
+    setSelectedHotel(null)
+    setSelectedRestaurants([])
+    setSelectedAttractions([])
     setStep(1)
+  }
+
+  function selectHotel(rec: Recommendation) {
+    setSelectedHotel(prev => prev?.name === rec.name ? null : rec)
+  }
+
+  function toggleRestaurant(r: Restaurant) {
+    setSelectedRestaurants(prev =>
+      prev.some(x => x.name === r.name)
+        ? prev.filter(x => x.name !== r.name)
+        : [...prev, r]
+    )
+  }
+
+  function toggleAttraction(a: Attraction) {
+    setSelectedAttractions(prev =>
+      prev.some(x => x.name === a.name)
+        ? prev.filter(x => x.name !== a.name)
+        : [...prev, a]
+    )
   }
 
   return (
@@ -159,6 +186,16 @@ export default function Home() {
                 <p className="text-slate-600 text-sm leading-relaxed border-t border-slate-100 pt-3">
                   {rec.reason}
                 </p>
+                <button
+                  onClick={() => selectHotel(rec)}
+                  className={`w-full rounded-lg py-2 text-sm font-semibold transition-colors ${
+                    selectedHotel?.name === rec.name
+                      ? 'bg-blue-600 text-white'
+                      : 'border border-blue-500 text-blue-600 hover:bg-blue-50'
+                  }`}
+                >
+                  {selectedHotel?.name === rec.name ? 'Hotel selecionado' : 'Selecionar hotel'}
+                </button>
               </div>
             ))}
           </div>
@@ -197,6 +234,16 @@ export default function Home() {
                 <p className="text-slate-600 text-sm leading-relaxed border-t border-slate-100 pt-3">
                   {r.description}
                 </p>
+                <button
+                  onClick={() => toggleRestaurant(r)}
+                  className={`w-full rounded-lg py-2 text-sm font-semibold transition-colors ${
+                    selectedRestaurants.some(x => x.name === r.name)
+                      ? 'bg-emerald-600 text-white'
+                      : 'border border-emerald-500 text-emerald-600 hover:bg-emerald-50'
+                  }`}
+                >
+                  {selectedRestaurants.some(x => x.name === r.name) ? 'Adicionado' : 'Adicionar'}
+                </button>
               </div>
             ))}
           </div>
@@ -235,6 +282,16 @@ export default function Home() {
                 <p className="text-slate-600 text-sm leading-relaxed border-t border-slate-100 pt-3">
                   {a.description}
                 </p>
+                <button
+                  onClick={() => toggleAttraction(a)}
+                  className={`w-full rounded-lg py-2 text-sm font-semibold transition-colors ${
+                    selectedAttractions.some(x => x.name === a.name)
+                      ? 'bg-violet-600 text-white'
+                      : 'border border-violet-500 text-violet-600 hover:bg-violet-50'
+                  }`}
+                >
+                  {selectedAttractions.some(x => x.name === a.name) ? 'Adicionado' : 'Adicionar'}
+                </button>
               </div>
             ))}
           </div>
@@ -285,6 +342,56 @@ export default function Home() {
                   </div>
                 </div>
               ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── Minha viagem ───────────────────────────────────────────────── */}
+      {(selectedHotel || selectedRestaurants.length > 0 || selectedAttractions.length > 0) && (
+        <div className="w-full max-w-2xl mt-10 mb-4">
+          <p className="text-xs font-semibold text-blue-500 uppercase tracking-widest mb-3">Selecionados</p>
+          <h2 className="text-xl font-semibold text-slate-700 mb-6">Minha viagem</h2>
+
+          {selectedHotel && (
+            <div className="mb-5">
+              <p className="text-xs font-semibold text-blue-400 uppercase tracking-widest mb-2">Hotel</p>
+              <div className="bg-white rounded-xl border border-blue-100 p-4">
+                <p className="font-semibold text-slate-800">{selectedHotel.name}</p>
+                <p className="text-sm text-slate-500">{selectedHotel.location} · {selectedHotel.price}</p>
+              </div>
+            </div>
+          )}
+
+          {selectedRestaurants.length > 0 && (
+            <div className="mb-5">
+              <p className="text-xs font-semibold text-emerald-500 uppercase tracking-widest mb-2">
+                Restaurantes ({selectedRestaurants.length})
+              </p>
+              <div className="flex flex-col gap-2">
+                {selectedRestaurants.map((r, i) => (
+                  <div key={i} className="bg-white rounded-xl border border-emerald-100 p-4">
+                    <p className="font-semibold text-slate-800">{r.name}</p>
+                    <p className="text-sm text-slate-500">{r.cuisine} · {r.neighborhood}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {selectedAttractions.length > 0 && (
+            <div>
+              <p className="text-xs font-semibold text-violet-500 uppercase tracking-widest mb-2">
+                Atrações ({selectedAttractions.length})
+              </p>
+              <div className="flex flex-col gap-2">
+                {selectedAttractions.map((a, i) => (
+                  <div key={i} className="bg-white rounded-xl border border-violet-100 p-4">
+                    <p className="font-semibold text-slate-800">{a.name}</p>
+                    <p className="text-sm text-slate-500">{a.type} · {a.neighborhood}</p>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
         </div>
