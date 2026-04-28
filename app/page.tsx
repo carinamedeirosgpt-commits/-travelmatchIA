@@ -6,10 +6,12 @@ import {
   type Restaurant,
   type Attraction,
   type TripSummary,
+  type ItineraryDay,
   getRecommendations,
   getRestaurants,
   getAttractions,
   parseTripSummary,
+  generateItinerary,
 } from './lib/recommendations'
 
 function Stars({ rating }: { rating: number }) {
@@ -49,13 +51,18 @@ export default function Home() {
   const [hotels, setHotels] = useState<Recommendation[]>([])
   const [restaurants, setRestaurants] = useState<Restaurant[]>([])
   const [attractions, setAttractions] = useState<Attraction[]>([])
+  const [itinerary, setItinerary] = useState<ItineraryDay[]>([])
 
   function handleSearch() {
     if (!query.trim()) return
+    const h = getRecommendations(query)
+    const r = getRestaurants(query)
+    const a = getAttractions(query)
     setSummary(parseTripSummary(query))
-    setHotels(getRecommendations(query))
-    setRestaurants(getRestaurants(query))
-    setAttractions(getAttractions(query))
+    setHotels(h)
+    setRestaurants(r)
+    setAttractions(a)
+    setItinerary(generateItinerary(h, r, a))
     setStep(1)
   }
 
@@ -240,20 +247,46 @@ export default function Home() {
         </div>
       )}
 
-      {/* ── Roteiro (placeholder) ──────────────────────────────────────── */}
+      {/* ── Roteiro ────────────────────────────────────────────────────── */}
       {step >= 5 && (
         <div className="w-full max-w-2xl mt-10 mb-4">
-          <p className="text-xs font-semibold text-blue-500 uppercase tracking-widest mb-3">Em breve</p>
+          <p className="text-xs font-semibold text-blue-500 uppercase tracking-widest mb-3">Roteiro</p>
           <h2 className="text-xl font-semibold text-slate-700 mb-6">Roteiro da viagem</h2>
-          <div className="bg-white rounded-2xl border-2 border-dashed border-slate-200 p-10 flex flex-col items-center gap-3 text-center">
-            <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 text-xl font-bold">
-              ?
+          {itinerary.length === 0 ? (
+            <p className="text-slate-500 text-sm">Roteiro não disponível para este destino ainda.</p>
+          ) : (
+            <div className="flex flex-col gap-5">
+              {itinerary.map((day) => (
+                <div key={day.day} className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+                  <div className="px-6 py-4 bg-slate-50 border-b border-slate-100">
+                    <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Dia {day.day}</p>
+                    <p className="text-base font-bold text-slate-800">{day.label}</p>
+                  </div>
+                  <div className="divide-y divide-slate-50">
+                    {day.slots.map((slot) => (
+                      <div key={slot.period} className="px-6 py-4 flex gap-4">
+                        <div className="shrink-0 w-14 pt-0.5">
+                          <span className={`text-xs font-bold uppercase ${
+                            slot.period === 'Manhã'  ? 'text-amber-500'   :
+                            slot.period === 'Almoço' ? 'text-emerald-500' :
+                            slot.period === 'Tarde'  ? 'text-violet-500'  :
+                                                       'text-blue-500'
+                          }`}>
+                            {slot.period}
+                          </span>
+                        </div>
+                        <div className="flex-1">
+                          <p className="font-semibold text-slate-800 text-sm">{slot.title}</p>
+                          <p className="text-xs text-slate-400 mb-1">{slot.subtitle}</p>
+                          <p className="text-xs text-slate-500 leading-relaxed">{slot.note}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
             </div>
-            <p className="text-slate-700 font-semibold">Roteiro personalizado dia a dia</p>
-            <p className="text-slate-400 text-sm max-w-sm">
-              Em uma próxima versão vamos montar seu roteiro completo com base nas hospedagens, restaurantes e atrações selecionados acima.
-            </p>
-          </div>
+          )}
         </div>
       )}
 

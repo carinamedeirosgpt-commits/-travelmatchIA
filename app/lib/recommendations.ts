@@ -538,3 +538,143 @@ export function getAttractions(text: string): Attraction[] {
   if (!cityKey) return []
   return CITY_EXTRAS[cityKey]?.attractions ?? []
 }
+
+// ── Itinerary ─────────────────────────────────────────────────────────────────
+
+export type ItinerarySlot = {
+  period: 'Manhã' | 'Almoço' | 'Tarde' | 'Noite'
+  title: string
+  subtitle: string
+  note: string
+  type: 'attraction' | 'restaurant' | 'free'
+}
+
+export type ItineraryDay = {
+  day: number
+  label: string
+  slots: ItinerarySlot[]
+}
+
+export function generateItinerary(
+  hotels: Recommendation[],
+  restaurants: Restaurant[],
+  attractions: Attraction[],
+): ItineraryDay[] {
+  if (attractions.length === 0 || restaurants.length === 0) return []
+
+  function neighborhood(idx: number): string {
+    return (hotels[idx] ?? hotels[0])?.location.split(',')[0].trim() ?? 'destino'
+  }
+
+  function firstSentence(text: string): string {
+    return text.split('.')[0] + '.'
+  }
+
+  const a = attractions
+  const r = restaurants
+
+  return [
+    {
+      day: 1,
+      label: 'Chegada e primeiros passos',
+      slots: [
+        {
+          period: 'Manhã',
+          title: a[0].name,
+          subtitle: `${a[0].type} · ${a[0].neighborhood}`,
+          note: `Duração: ${a[0].duration}. ${firstSentence(a[0].description)}`,
+          type: 'attraction',
+        },
+        {
+          period: 'Almoço',
+          title: r[0].name,
+          subtitle: `${r[0].cuisine} · ${r[0].neighborhood}`,
+          note: firstSentence(r[0].description),
+          type: 'restaurant',
+        },
+        {
+          period: 'Tarde',
+          title: a[1].name,
+          subtitle: `${a[1].type} · ${a[1].neighborhood}`,
+          note: `Duração: ${a[1].duration}. ${firstSentence(a[1].description)}`,
+          type: 'attraction',
+        },
+        {
+          period: 'Noite',
+          title: r[1].name,
+          subtitle: `${r[1].cuisine} · ${r[1].neighborhood}`,
+          note: firstSentence(r[1].description),
+          type: 'restaurant',
+        },
+      ],
+    },
+    {
+      day: 2,
+      label: 'Explorando mais a fundo',
+      slots: [
+        {
+          period: 'Manhã',
+          title: a[2].name,
+          subtitle: `${a[2].type} · ${a[2].neighborhood}`,
+          note: `Duração: ${a[2].duration}. ${firstSentence(a[2].description)}`,
+          type: 'attraction',
+        },
+        {
+          period: 'Almoço',
+          title: r[2].name,
+          subtitle: `${r[2].cuisine} · ${r[2].neighborhood}`,
+          note: firstSentence(r[2].description),
+          type: 'restaurant',
+        },
+        {
+          period: 'Tarde',
+          title: `Tarde livre em ${neighborhood(0)}`,
+          subtitle: 'Passeio livre',
+          note: 'Explore o bairro da hospedagem, descanse ou visite algum ponto que chamou atenção.',
+          type: 'free',
+        },
+        {
+          period: 'Noite',
+          title: r[0].name,
+          subtitle: `${r[0].cuisine} · ${r[0].neighborhood}`,
+          note: 'Retorne para jantar — experimente um prato diferente do almoço de ontem.',
+          type: 'restaurant',
+        },
+      ],
+    },
+    {
+      day: 3,
+      label: 'Último dia e despedida',
+      slots: [
+        {
+          period: 'Manhã',
+          title: `Manhã tranquila em ${neighborhood(1)}`,
+          subtitle: 'Passeio livre',
+          note: 'Café da manhã com calma, caminhada pelo bairro e últimas compras.',
+          type: 'free',
+        },
+        {
+          period: 'Almoço',
+          title: r[1].name,
+          subtitle: `${r[1].cuisine} · ${r[1].neighborhood}`,
+          note: firstSentence(r[1].description),
+          type: 'restaurant',
+        },
+        {
+          period: 'Tarde',
+          title: `Tarde livre em ${neighborhood(2)}`,
+          subtitle: 'Passeio livre',
+          note: 'Reserve tempo para revisitar seu lugar favorito ou explorar um canto ainda não visitado.',
+          type: 'free',
+        },
+        {
+          period: 'Noite',
+          title: r[2].name,
+          subtitle: `${r[2].cuisine} · ${r[2].neighborhood}`,
+          note: 'Jantar de despedida — finalize a viagem com a melhor experiência gastronômica do destino.',
+          type: 'restaurant',
+        },
+      ],
+    },
+  ]
+}
