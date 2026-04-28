@@ -62,11 +62,12 @@ export default function Home() {
     const h = getRecommendations(query)
     const r = getRestaurants(query)
     const a = getAttractions(query)
-    setSummary(parseTripSummary(query))
+    const s = parseTripSummary(query)
+    setSummary(s)
     setHotels(h)
     setRestaurants(r)
     setAttractions(a)
-    setItinerary(generateItinerary(h, r, a))
+    setItinerary(generateItinerary(h, r, a, s.tripDays))
     setSelectedHotel(null)
     setSelectedRestaurants([])
     setSelectedAttractions([])
@@ -135,17 +136,21 @@ export default function Home() {
               <p className="text-slate-700">{summary.destination}</p>
             </div>
             <div>
+              <p className="text-blue-600 font-medium mb-0.5">Duração</p>
+              <p className="text-slate-700">{summary.tripDays} {summary.tripDays === 1 ? 'dia' : 'dias'}</p>
+            </div>
+            <div>
               <p className="text-blue-600 font-medium mb-0.5">Objetivo</p>
               <p className="text-slate-700">{summary.objective}</p>
             </div>
-            {summary.budget && (
+            {summary.budget !== null && (
               <div>
                 <p className="text-blue-600 font-medium mb-0.5">Orçamento</p>
-                <p className="text-slate-700">{summary.budget}</p>
+                <p className="text-slate-700">R$ {summary.budget} / dia</p>
               </div>
             )}
             {summary.interests.length > 0 && (
-              <div className={summary.budget ? '' : 'col-span-2'}>
+              <div className="col-span-2">
                 <p className="text-blue-600 font-medium mb-0.5">Interesses</p>
                 <p className="text-slate-700">{summary.interests.join(', ')}</p>
               </div>

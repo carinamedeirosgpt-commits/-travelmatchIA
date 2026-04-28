@@ -351,6 +351,7 @@ export type Restaurant = {
   priceRange: string
   rating: number
   description: string
+  mealType: 'lunch' | 'dinner' | 'both'
 }
 
 // ── Attraction ────────────────────────────────────────────────────────────────
@@ -369,7 +370,8 @@ export type Attraction = {
 export type TripSummary = {
   destination: string
   objective: string
-  budget: string | null
+  budget: number | null
+  tripDays: number
   interests: string[]
 }
 
@@ -384,6 +386,7 @@ const CITY_EXTRAS: Record<string, { restaurants: Restaurant[]; attractions: Attr
         neighborhood: 'Trastevere',
         priceRange: '€€',
         rating: 4.8,
+        mealType: 'both',
         description: 'Trattoria familiar no coração do Trastevere — cacio e pepe e carbonara do jeito que devem ser feitos. Fila na porta todos os dias.',
       },
       {
@@ -392,6 +395,7 @@ const CITY_EXTRAS: Record<string, { restaurants: Restaurant[]; attractions: Attr
         neighborhood: 'Prati',
         priceRange: '€',
         rating: 4.7,
+        mealType: 'lunch',
         description: 'Gabri Bonci transformou pizza de rua em arte. Vendida por peso, com coberturas que mudam todo dia — imperdível ao visitar o Vaticano.',
       },
       {
@@ -400,6 +404,7 @@ const CITY_EXTRAS: Record<string, { restaurants: Restaurant[]; attractions: Attr
         neighborhood: 'Centro Histórico',
         priceRange: '€€€€',
         rating: 4.9,
+        mealType: 'dinner',
         description: 'Dois estrelas Michelin no centro histórico. Menu degustação que reinterpreta a cozinha romana com técnica de alto nível.',
       },
     ],
@@ -439,6 +444,7 @@ const CITY_EXTRAS: Record<string, { restaurants: Restaurant[]; attractions: Attr
         neighborhood: 'Shinjuku',
         priceRange: '¥',
         rating: 4.6,
+        mealType: 'both',
         description: 'A rede de ramen mais famosa do Japão. Boxes individuais para comer concentrado, com personalização total do caldo. Funciona 24h.',
       },
       {
@@ -447,6 +453,7 @@ const CITY_EXTRAS: Record<string, { restaurants: Restaurant[]; attractions: Attr
         neighborhood: 'Ginza',
         priceRange: '¥¥¥¥¥',
         rating: 5.0,
+        mealType: 'dinner',
         description: 'Três estrelas Michelin e inspiração do documentário "Jiro Dreams of Sushi". Menu único servido pelo mestre Jiro — reserva com meses de antecedência.',
       },
       {
@@ -455,6 +462,7 @@ const CITY_EXTRAS: Record<string, { restaurants: Restaurant[]; attractions: Attr
         neighborhood: 'Shibuya',
         priceRange: '¥¥¥',
         rating: 4.5,
+        mealType: 'dinner',
         description: 'O izakaya que inspirou a cena do restaurante em Kill Bill. Robata, yakitori e saquê em ambiente histórico de dois andares com bambus.',
       },
     ],
@@ -500,18 +508,30 @@ export function parseTripSummary(text: string): TripSummary {
   const objectiveKey = detectObjective(text)
   const objective = OBJECTIVE_LABELS[objectiveKey]
 
-  let budget: string | null = null
-  if (/barato|econômico|budget|low.?cost/.test(t)) budget = 'Econômico'
-  else if (/luxo|premium|alto padrão/.test(t)) budget = 'Alto padrão'
-  else if (/moderado|médio|razoável/.test(t)) budget = 'Moderado'
-  else {
-    const match = text.match(/R\$\s*[\d.,]+|€\s*[\d.,]+|\$\s*[\d.,]+/)
-    if (match) budget = match[0]
+  // Detect budget as a number (e.g. "R$50", "50 reais", "€80")
+  let budget: number | null = null
+  const budgetMatch = text.match(/(?:R\$|€)\s*(\d+(?:[.,]\d+)?)|(\d+(?:[.,]\d+)?)\s*reais?/i)
+  if (budgetMatch) {
+    const raw = (budgetMatch[1] ?? budgetMatch[2]).replace(',', '.')
+    const parsed = parseFloat(raw)
+    if (!isNaN(parsed)) budget = parsed
   }
 
+  // Detect number of days (default 3, cap at 14)
+  let tripDays = 3
+  const daysMatch = text.match(/(\d+)\s*dias?/i)
+  if (daysMatch) {
+    const parsed = parseInt(daysMatch[1], 10)
+    if (!isNaN(parsed)) tripDays = Math.min(Math.max(parsed, 1), 14)
+  }
+
+  // Detect multiple interests
   const interests: string[] = []
+  if (/turismo|pontos turísticos|atrações|sightseeing|conhecer|visitar/.test(t)) interests.push('Turismo')
+  if (/trabalho|negócio|conferência|congresso/.test(t)) interests.push('Negócios')
+  if (/descanso|relaxar|tranquil|spa/.test(t)) interests.push('Descanso')
+  if (/gastronomia|restaurante|comida|culinária|comer/.test(t)) interests.push('Gastronomia')
   if (/museu|arte|galeria|cultura/.test(t)) interests.push('Museus e cultura')
-  if (/gastronomia|restaurante|comida|culinária/.test(t)) interests.push('Gastronomia')
   if (/natureza|trilha|parque|cachoeira/.test(t)) interests.push('Natureza')
   if (/compras|shopping/.test(t)) interests.push('Compras')
   if (/praia|mar|litoral/.test(t)) interests.push('Praia')
@@ -524,7 +544,7 @@ export function parseTripSummary(text: string): TripSummary {
     }
   }
 
-  return { destination, objective, budget, interests }
+  return { destination, objective, budget, tripDays, interests }
 }
 
 export function getRestaurants(text: string): Restaurant[] {
@@ -559,6 +579,7 @@ export function generateItinerary(
   hotels: Recommendation[],
   restaurants: Restaurant[],
   attractions: Attraction[],
+  tripDays = 3,
 ): ItineraryDay[] {
   if (attractions.length === 0 || restaurants.length === 0) return []
 
@@ -567,118 +588,91 @@ export function generateItinerary(
   }
 
   function neighborhood(idx: number): string {
-    return pick(hotels.length > 0 ? hotels : [], idx)?.location.split(',')[0].trim() ?? 'destino'
+    if (hotels.length === 0) return 'destino'
+    return pick(hotels, idx).location.split(',')[0].trim()
   }
 
   function firstSentence(text: string): string {
     return text.split('.')[0] + '.'
   }
 
-  const a = attractions
-  const r = restaurants
+  // Split restaurants into lunch and dinner pools with fallback to all
+  const lunchPool = restaurants.filter(r => r.mealType === 'lunch' || r.mealType === 'both')
+  const dinnerPool = restaurants.filter(r => r.mealType === 'dinner' || r.mealType === 'both')
+  const safeLunch = lunchPool.length > 0 ? lunchPool : restaurants
+  const safeDinner = dinnerPool.length > 0 ? dinnerPool : restaurants
 
-  return [
-    {
-      day: 1,
-      label: 'Chegada e primeiros passos',
-      slots: [
-        {
-          period: 'Manhã',
-          title: pick(a, 0).name,
-          subtitle: `${pick(a, 0).type} · ${pick(a, 0).neighborhood}`,
-          note: `Duração: ${pick(a, 0).duration}. ${firstSentence(pick(a, 0).description)}`,
-          type: 'attraction',
-        },
-        {
-          period: 'Almoço',
-          title: pick(r, 0).name,
-          subtitle: `${pick(r, 0).cuisine} · ${pick(r, 0).neighborhood}`,
-          note: firstSentence(pick(r, 0).description),
-          type: 'restaurant',
-        },
-        {
-          period: 'Tarde',
-          title: pick(a, 1).name,
-          subtitle: `${pick(a, 1).type} · ${pick(a, 1).neighborhood}`,
-          note: `Duração: ${pick(a, 1).duration}. ${firstSentence(pick(a, 1).description)}`,
-          type: 'attraction',
-        },
-        {
-          period: 'Noite',
-          title: pick(r, 1).name,
-          subtitle: `${pick(r, 1).cuisine} · ${pick(r, 1).neighborhood}`,
-          note: firstSentence(pick(r, 1).description),
-          type: 'restaurant',
-        },
-      ],
-    },
-    {
-      day: 2,
-      label: 'Explorando mais a fundo',
-      slots: [
-        {
-          period: 'Manhã',
-          title: pick(a, 2).name,
-          subtitle: `${pick(a, 2).type} · ${pick(a, 2).neighborhood}`,
-          note: `Duração: ${pick(a, 2).duration}. ${firstSentence(pick(a, 2).description)}`,
-          type: 'attraction',
-        },
-        {
-          period: 'Almoço',
-          title: pick(r, 2).name,
-          subtitle: `${pick(r, 2).cuisine} · ${pick(r, 2).neighborhood}`,
-          note: firstSentence(pick(r, 2).description),
-          type: 'restaurant',
-        },
-        {
-          period: 'Tarde',
-          title: `Tarde livre em ${neighborhood(0)}`,
-          subtitle: 'Passeio livre',
-          note: 'Explore o bairro da hospedagem, descanse ou visite algum ponto que chamou atenção.',
-          type: 'free',
-        },
-        {
-          period: 'Noite',
-          title: pick(r, 0).name,
-          subtitle: `${pick(r, 0).cuisine} · ${pick(r, 0).neighborhood}`,
-          note: 'Retorne para jantar — experimente um prato diferente do almoço de ontem.',
-          type: 'restaurant',
-        },
-      ],
-    },
-    {
-      day: 3,
-      label: 'Último dia e despedida',
-      slots: [
-        {
-          period: 'Manhã',
-          title: `Manhã tranquila em ${neighborhood(1)}`,
-          subtitle: 'Passeio livre',
-          note: 'Café da manhã com calma, caminhada pelo bairro e últimas compras.',
-          type: 'free',
-        },
-        {
-          period: 'Almoço',
-          title: pick(r, 1).name,
-          subtitle: `${pick(r, 1).cuisine} · ${pick(r, 1).neighborhood}`,
-          note: firstSentence(pick(r, 1).description),
-          type: 'restaurant',
-        },
-        {
-          period: 'Tarde',
-          title: `Tarde livre em ${neighborhood(2)}`,
-          subtitle: 'Passeio livre',
-          note: 'Reserve tempo para revisitar seu lugar favorito ou explorar um canto ainda não visitado.',
-          type: 'free',
-        },
-        {
-          period: 'Noite',
-          title: pick(r, 2).name,
-          subtitle: `${pick(r, 2).cuisine} · ${pick(r, 2).neighborhood}`,
-          note: 'Jantar de despedida — finalize a viagem com a melhor experiência gastronômica do destino.',
-          type: 'restaurant',
-        },
-      ],
-    },
-  ]
+  function attractionSlot(period: 'Manhã' | 'Tarde', idx: number): ItinerarySlot {
+    const a = pick(attractions, idx)
+    return {
+      period,
+      title: a.name,
+      subtitle: `${a.type} · ${a.neighborhood}`,
+      note: `Duração: ${a.duration}. ${firstSentence(a.description)}`,
+      type: 'attraction',
+    }
+  }
+
+  function lunchSlot(idx: number): ItinerarySlot {
+    const r = pick(safeLunch, idx)
+    return {
+      period: 'Almoço',
+      title: r.name,
+      subtitle: `${r.cuisine} · ${r.neighborhood}`,
+      note: firstSentence(r.description),
+      type: 'restaurant',
+    }
+  }
+
+  function dinnerSlot(idx: number, note?: string): ItinerarySlot {
+    const r = pick(safeDinner, idx)
+    return {
+      period: 'Noite',
+      title: r.name,
+      subtitle: `${r.cuisine} · ${r.neighborhood}`,
+      note: note ?? firstSentence(r.description),
+      type: 'restaurant',
+    }
+  }
+
+  function freeSlot(period: 'Manhã' | 'Tarde', hotelIdx: number, note: string): ItinerarySlot {
+    const label = period === 'Manhã' ? 'Manhã tranquila' : 'Tarde livre'
+    return {
+      period,
+      title: `${label} em ${neighborhood(hotelIdx)}`,
+      subtitle: 'Passeio livre',
+      note,
+      type: 'free',
+    }
+  }
+
+  const clampedDays = Math.max(1, tripDays)
+  const days: ItineraryDay[] = []
+
+  for (let i = 0; i < clampedDays; i++) {
+    const isFirst = i === 0
+    const isLast = i === clampedDays - 1
+
+    const label =
+      clampedDays === 1 ? 'Dia único' :
+      isFirst           ? 'Chegada e primeiros passos' :
+      isLast            ? 'Último dia e despedida' :
+                          'Explorando mais a fundo'
+
+    const morning = (isLast && clampedDays > 1)
+      ? freeSlot('Manhã', i, 'Café da manhã com calma, caminhada pelo bairro e últimas compras.')
+      : attractionSlot('Manhã', i * 2)
+
+    const afternoon = isFirst
+      ? attractionSlot('Tarde', i * 2 + 1)
+      : freeSlot('Tarde', i, 'Explore o bairro da hospedagem, descanse ou visite algum ponto que chamou atenção.')
+
+    const dinner = isLast
+      ? dinnerSlot(i, 'Jantar de despedida — finalize a viagem com a melhor experiência gastronômica do destino.')
+      : dinnerSlot(i)
+
+    days.push({ day: i + 1, label, slots: [morning, lunchSlot(i), afternoon, dinner] })
+  }
+
+  return days
 }
