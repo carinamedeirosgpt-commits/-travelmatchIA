@@ -44,15 +44,28 @@ function NextStepButton({ label, onClick }: { label: string; onClick: () => void
   )
 }
 
+const VISIBLE = 3
+
 export default function Home() {
   const [query, setQuery] = useState('')
   const [step, setStep] = useState(0)
   const [summary, setSummary] = useState<TripSummary | null>(null)
-  const [hotels, setHotels] = useState<Recommendation[]>([])
-  const [restaurants, setRestaurants] = useState<Restaurant[]>([])
-  const [attractions, setAttractions] = useState<Attraction[]>([])
+
+  // full pools
+  const [hotelPool, setHotelPool] = useState<Recommendation[]>([])
+  const [restaurantPool, setRestaurantPool] = useState<Restaurant[]>([])
+  const [attractionPool, setAttractionPool] = useState<Attraction[]>([])
   const [itinerary, setItinerary] = useState<ItineraryDay[]>([])
 
+  // visible slots (null = dismissed with no replacement available)
+  const [shownHotels, setShownHotels] = useState<(Recommendation | null)[]>([])
+  const [hotelCursor, setHotelCursor] = useState(0)
+  const [shownRestaurants, setShownRestaurants] = useState<(Restaurant | null)[]>([])
+  const [restaurantCursor, setRestaurantCursor] = useState(0)
+  const [shownAttractions, setShownAttractions] = useState<(Attraction | null)[]>([])
+  const [attractionCursor, setAttractionCursor] = useState(0)
+
+  // selections
   const [selectedHotel, setSelectedHotel] = useState<Recommendation | null>(null)
   const [selectedRestaurants, setSelectedRestaurants] = useState<Restaurant[]>([])
   const [selectedAttractions, setSelectedAttractions] = useState<Attraction[]>([])
@@ -63,15 +76,63 @@ export default function Home() {
     const r = getRestaurants(query)
     const a = getAttractions(query)
     const s = parseTripSummary(query)
+
     setSummary(s)
-    setHotels(h)
-    setRestaurants(r)
-    setAttractions(a)
-    setItinerary(generateItinerary(h, r, a, s.tripDays))
+    setHotelPool(h)
+    setRestaurantPool(r)
+    setAttractionPool(a)
+    setItinerary(generateItinerary(h.slice(0, 3), r, a, s.tripDays))
+
+    setShownHotels(h.slice(0, VISIBLE))
+    setHotelCursor(VISIBLE)
+    setShownRestaurants(r.slice(0, VISIBLE))
+    setRestaurantCursor(VISIBLE)
+    setShownAttractions(a.slice(0, VISIBLE))
+    setAttractionCursor(VISIBLE)
+
     setSelectedHotel(null)
     setSelectedRestaurants([])
     setSelectedAttractions([])
     setStep(1)
+  }
+
+  function dismissHotel(slotIdx: number) {
+    setShownHotels(prev => {
+      const next = [...prev]
+      if (hotelCursor < hotelPool.length) {
+        next[slotIdx] = hotelPool[hotelCursor]
+        setHotelCursor(c => c + 1)
+      } else {
+        next[slotIdx] = null
+      }
+      return next
+    })
+  }
+
+  function dismissRestaurant(slotIdx: number) {
+    setShownRestaurants(prev => {
+      const next = [...prev]
+      if (restaurantCursor < restaurantPool.length) {
+        next[slotIdx] = restaurantPool[restaurantCursor]
+        setRestaurantCursor(c => c + 1)
+      } else {
+        next[slotIdx] = null
+      }
+      return next
+    })
+  }
+
+  function dismissAttraction(slotIdx: number) {
+    setShownAttractions(prev => {
+      const next = [...prev]
+      if (attractionCursor < attractionPool.length) {
+        next[slotIdx] = attractionPool[attractionCursor]
+        setAttractionCursor(c => c + 1)
+      } else {
+        next[slotIdx] = null
+      }
+      return next
+    })
   }
 
   function selectHotel(rec: Recommendation) {
@@ -93,6 +154,10 @@ export default function Home() {
         : [...prev, a]
     )
   }
+
+  const allHotelsDismissed = shownHotels.length > 0 && shownHotels.every(h => h === null)
+  const allRestaurantsDismissed = shownRestaurants.length > 0 && shownRestaurants.every(r => r === null)
+  const allAttractionsDismissed = shownAttractions.length > 0 && shownAttractions.every(a => a === null)
 
   return (
     <main className="min-h-screen flex flex-col items-center px-4 py-16">
@@ -174,35 +239,56 @@ export default function Home() {
             subtitle="Selecionadas com base no destino e nos seus interesses"
           />
           <div className="flex flex-col gap-5">
-            {hotels.length === 0 ? (
+            {allHotelsDismissed ? (
+              <p className="text-slate-500 text-sm">Não temos mais opções para essa categoria no momento.</p>
+            ) : hotelPool.length === 0 ? (
               <p className="text-slate-500 text-sm">Nenhuma hospedagem encontrada para este destino ainda.</p>
-            ) : hotels.map((rec, i) => (
-              <div key={i} className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 flex flex-col gap-3">
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <h3 className="text-lg font-bold text-slate-900">{rec.name}</h3>
-                    <p className="text-slate-500 text-sm">{rec.location}</p>
+            ) : shownHotels.map((rec, i) => {
+              if (rec === null) return null
+              return (
+                <div key={rec.name} className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 flex flex-col gap-3">
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <h3 className="text-lg font-bold text-slate-900">{rec.name}</h3>
+                      <p className="text-slate-500 text-sm">{rec.location}</p>
+                    </div>
+                    <span className="shrink-0 text-blue-700 font-bold text-base bg-blue-50 rounded-lg px-3 py-1">
+                      {rec.price}
+                    </span>
                   </div>
-                  <span className="shrink-0 text-blue-700 font-bold text-base bg-blue-50 rounded-lg px-3 py-1">
-                    {rec.price}
-                  </span>
+                  <div className="flex items-center gap-3">
+                    <Stars rating={rec.rating} />
+                    <span className="text-xs text-slate-400">{rec.reviewCount.toLocaleString('pt-BR')} avaliações</span>
+                  </div>
+                  {rec.reviewSnippet && (
+                    <p className="text-xs text-slate-500 italic border-l-2 border-blue-200 pl-3">
+                      &ldquo;{rec.reviewSnippet}&rdquo;
+                    </p>
+                  )}
+                  <p className="text-slate-600 text-sm leading-relaxed border-t border-slate-100 pt-3">
+                    {rec.reason}
+                  </p>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => selectHotel(rec)}
+                      className={`flex-1 rounded-lg py-2 text-sm font-semibold transition-colors ${
+                        selectedHotel?.name === rec.name
+                          ? 'bg-blue-600 text-white'
+                          : 'border border-blue-500 text-blue-600 hover:bg-blue-50'
+                      }`}
+                    >
+                      {selectedHotel?.name === rec.name ? 'Hotel selecionado' : 'Selecionar hotel'}
+                    </button>
+                    <button
+                      onClick={() => dismissHotel(i)}
+                      className="rounded-lg py-2 px-3 text-sm font-semibold border border-slate-200 text-slate-500 hover:bg-slate-50 transition-colors whitespace-nowrap"
+                    >
+                      Ver outra opção
+                    </button>
+                  </div>
                 </div>
-                <Stars rating={rec.rating} />
-                <p className="text-slate-600 text-sm leading-relaxed border-t border-slate-100 pt-3">
-                  {rec.reason}
-                </p>
-                <button
-                  onClick={() => selectHotel(rec)}
-                  className={`w-full rounded-lg py-2 text-sm font-semibold transition-colors ${
-                    selectedHotel?.name === rec.name
-                      ? 'bg-blue-600 text-white'
-                      : 'border border-blue-500 text-blue-600 hover:bg-blue-50'
-                  }`}
-                >
-                  {selectedHotel?.name === rec.name ? 'Hotel selecionado' : 'Selecionar hotel'}
-                </button>
-              </div>
-            ))}
+              )
+            })}
           </div>
         </div>
       )}
@@ -222,35 +308,56 @@ export default function Home() {
             subtitle="Para explorar a gastronomia local durante a viagem"
           />
           <div className="flex flex-col gap-5">
-            {restaurants.length === 0 ? (
+            {allRestaurantsDismissed ? (
+              <p className="text-slate-500 text-sm">Não temos mais opções para essa categoria no momento.</p>
+            ) : restaurantPool.length === 0 ? (
               <p className="text-slate-500 text-sm">Nenhum restaurante encontrado para este destino ainda.</p>
-            ) : restaurants.map((r, i) => (
-              <div key={i} className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 flex flex-col gap-3">
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <h3 className="text-lg font-bold text-slate-900">{r.name}</h3>
-                    <p className="text-slate-500 text-sm">{r.cuisine} · {r.neighborhood}</p>
+            ) : shownRestaurants.map((r, i) => {
+              if (r === null) return null
+              return (
+                <div key={r.name} className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 flex flex-col gap-3">
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <h3 className="text-lg font-bold text-slate-900">{r.name}</h3>
+                      <p className="text-slate-500 text-sm">{r.cuisine} · {r.neighborhood}</p>
+                    </div>
+                    <span className="shrink-0 text-emerald-700 font-bold text-base bg-emerald-50 rounded-lg px-3 py-1">
+                      {r.priceRange}
+                    </span>
                   </div>
-                  <span className="shrink-0 text-emerald-700 font-bold text-base bg-emerald-50 rounded-lg px-3 py-1">
-                    {r.priceRange}
-                  </span>
+                  <div className="flex items-center gap-3">
+                    <Stars rating={r.rating} />
+                    <span className="text-xs text-slate-400">{r.reviewCount.toLocaleString('pt-BR')} avaliações</span>
+                  </div>
+                  {r.reviewSnippet && (
+                    <p className="text-xs text-slate-500 italic border-l-2 border-emerald-200 pl-3">
+                      &ldquo;{r.reviewSnippet}&rdquo;
+                    </p>
+                  )}
+                  <p className="text-slate-600 text-sm leading-relaxed border-t border-slate-100 pt-3">
+                    {r.description}
+                  </p>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => toggleRestaurant(r)}
+                      className={`flex-1 rounded-lg py-2 text-sm font-semibold transition-colors ${
+                        selectedRestaurants.some(x => x.name === r.name)
+                          ? 'bg-emerald-600 text-white'
+                          : 'border border-emerald-500 text-emerald-600 hover:bg-emerald-50'
+                      }`}
+                    >
+                      {selectedRestaurants.some(x => x.name === r.name) ? 'Adicionado' : 'Adicionar'}
+                    </button>
+                    <button
+                      onClick={() => dismissRestaurant(i)}
+                      className="rounded-lg py-2 px-3 text-sm font-semibold border border-slate-200 text-slate-500 hover:bg-slate-50 transition-colors whitespace-nowrap"
+                    >
+                      Ver outra opção
+                    </button>
+                  </div>
                 </div>
-                <Stars rating={r.rating} />
-                <p className="text-slate-600 text-sm leading-relaxed border-t border-slate-100 pt-3">
-                  {r.description}
-                </p>
-                <button
-                  onClick={() => toggleRestaurant(r)}
-                  className={`w-full rounded-lg py-2 text-sm font-semibold transition-colors ${
-                    selectedRestaurants.some(x => x.name === r.name)
-                      ? 'bg-emerald-600 text-white'
-                      : 'border border-emerald-500 text-emerald-600 hover:bg-emerald-50'
-                  }`}
-                >
-                  {selectedRestaurants.some(x => x.name === r.name) ? 'Adicionado' : 'Adicionar'}
-                </button>
-              </div>
-            ))}
+              )
+            })}
           </div>
         </div>
       )}
@@ -270,35 +377,56 @@ export default function Home() {
             subtitle="O que fazer e visitar durante a viagem"
           />
           <div className="flex flex-col gap-5">
-            {attractions.length === 0 ? (
+            {allAttractionsDismissed ? (
+              <p className="text-slate-500 text-sm">Não temos mais opções para essa categoria no momento.</p>
+            ) : attractionPool.length === 0 ? (
               <p className="text-slate-500 text-sm">Nenhuma atração encontrada para este destino ainda.</p>
-            ) : attractions.map((a, i) => (
-              <div key={i} className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 flex flex-col gap-3">
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <h3 className="text-lg font-bold text-slate-900">{a.name}</h3>
-                    <p className="text-slate-500 text-sm">{a.type} · {a.neighborhood}</p>
+            ) : shownAttractions.map((a, i) => {
+              if (a === null) return null
+              return (
+                <div key={a.name} className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 flex flex-col gap-3">
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <h3 className="text-lg font-bold text-slate-900">{a.name}</h3>
+                      <p className="text-slate-500 text-sm">{a.type} · {a.neighborhood}</p>
+                    </div>
+                    <span className="shrink-0 text-violet-700 font-bold text-sm bg-violet-50 rounded-lg px-3 py-1">
+                      {a.duration}
+                    </span>
                   </div>
-                  <span className="shrink-0 text-violet-700 font-bold text-sm bg-violet-50 rounded-lg px-3 py-1">
-                    {a.duration}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-slate-400">{a.reviewCount.toLocaleString('pt-BR')} avaliações</span>
+                  </div>
+                  <p className="text-xs text-slate-400">Entrada: {a.price}</p>
+                  {a.reviewSnippet && (
+                    <p className="text-xs text-slate-500 italic border-l-2 border-violet-200 pl-3">
+                      &ldquo;{a.reviewSnippet}&rdquo;
+                    </p>
+                  )}
+                  <p className="text-slate-600 text-sm leading-relaxed border-t border-slate-100 pt-3">
+                    {a.description}
+                  </p>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => toggleAttraction(a)}
+                      className={`flex-1 rounded-lg py-2 text-sm font-semibold transition-colors ${
+                        selectedAttractions.some(x => x.name === a.name)
+                          ? 'bg-violet-600 text-white'
+                          : 'border border-violet-500 text-violet-600 hover:bg-violet-50'
+                      }`}
+                    >
+                      {selectedAttractions.some(x => x.name === a.name) ? 'Adicionado' : 'Adicionar'}
+                    </button>
+                    <button
+                      onClick={() => dismissAttraction(i)}
+                      className="rounded-lg py-2 px-3 text-sm font-semibold border border-slate-200 text-slate-500 hover:bg-slate-50 transition-colors whitespace-nowrap"
+                    >
+                      Ver outra opção
+                    </button>
+                  </div>
                 </div>
-                <p className="text-xs text-slate-400">Entrada: {a.price}</p>
-                <p className="text-slate-600 text-sm leading-relaxed border-t border-slate-100 pt-3">
-                  {a.description}
-                </p>
-                <button
-                  onClick={() => toggleAttraction(a)}
-                  className={`w-full rounded-lg py-2 text-sm font-semibold transition-colors ${
-                    selectedAttractions.some(x => x.name === a.name)
-                      ? 'bg-violet-600 text-white'
-                      : 'border border-violet-500 text-violet-600 hover:bg-violet-50'
-                  }`}
-                >
-                  {selectedAttractions.some(x => x.name === a.name) ? 'Adicionado' : 'Adicionar'}
-                </button>
-              </div>
-            ))}
+              )
+            })}
           </div>
         </div>
       )}
