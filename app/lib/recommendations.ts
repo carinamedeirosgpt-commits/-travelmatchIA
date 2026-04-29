@@ -368,6 +368,7 @@ export type Restaurant = {
   mealType: 'lunch' | 'dinner' | 'both'
   reviewCount: number
   reviewSnippet: string
+  imageUrl: string
 }
 
 // ── Attraction ────────────────────────────────────────────────────────────────
@@ -381,6 +382,7 @@ export type Attraction = {
   description: string
   reviewCount: number
   reviewSnippet: string
+  imageUrl?: string
 }
 
 // ── Trip summary ──────────────────────────────────────────────────────────────
@@ -411,6 +413,7 @@ const CITY_EXTRAS: Record<string, { restaurants: Restaurant[]; attractions: Attr
         description: 'Trattoria familiar no coração do Trastevere — cacio e pepe e carbonara do jeito que devem ser feitos. Fila na porta todos os dias.',
         reviewCount: 6234,
         reviewSnippet: 'A carbonara mais autêntica que comi em Roma — impossível não pedir de novo.',
+        imageUrl: 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=600&h=220&fit=crop&q=80&auto=format',
       },
       {
         name: 'Pizzarium Bonci',
@@ -422,6 +425,7 @@ const CITY_EXTRAS: Record<string, { restaurants: Restaurant[]; attractions: Attr
         description: 'Gabri Bonci transformou pizza de rua em arte. Vendida por peso, com coberturas que mudam todo dia — imperdível ao visitar o Vaticano.',
         reviewCount: 8921,
         reviewSnippet: 'Saí do Vaticano e fui direto aqui — melhor decisão da viagem.',
+        imageUrl: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=600&h=220&fit=crop&q=80&auto=format',
       },
       {
         name: 'Il Pagliaccio',
@@ -433,6 +437,7 @@ const CITY_EXTRAS: Record<string, { restaurants: Restaurant[]; attractions: Attr
         description: 'Dois estrelas Michelin no centro histórico. Menu degustação que reinterpreta a cozinha romana com técnica de alto nível.',
         reviewCount: 2187,
         reviewSnippet: 'Experiência gastronômica inesquecível — cada prato é uma obra de arte.',
+        imageUrl: 'https://images.unsplash.com/photo-1476224203421-74177f19a8b4?w=600&h=220&fit=crop&q=80&auto=format',
       },
       {
         name: 'Supplì Roma',
@@ -444,6 +449,7 @@ const CITY_EXTRAS: Record<string, { restaurants: Restaurant[]; attractions: Attr
         description: 'O lugar definitivo para o supplì alla romana — bolinho de arroz frito com ragù e mozzarella filante. Fila constante de moradores locais.',
         reviewCount: 11432,
         reviewSnippet: 'Melhor supplì de Roma sem discussão — ainda penso nele semanas depois.',
+        imageUrl: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=600&h=220&fit=crop&q=80&auto=format',
       },
       {
         name: 'Osteria dell\'Angelo',
@@ -455,6 +461,7 @@ const CITY_EXTRAS: Record<string, { restaurants: Restaurant[]; attractions: Attr
         description: 'Cucina romana clássica às terças e quintas com menu fixo e preço fixo — gricia, coda alla vaccinara e tiramisù da casa. Reserva obrigatória.',
         reviewCount: 4891,
         reviewSnippet: 'Menu fixo impecável, ambiente descontraído e preço justo para a região.',
+        imageUrl: 'https://images.unsplash.com/photo-1555396273-122d2c4f9c0b?w=600&h=220&fit=crop&q=80&auto=format',
       },
       {
         name: 'Ristorante Settimio all\'Arancio',
@@ -466,6 +473,7 @@ const CITY_EXTRAS: Record<string, { restaurants: Restaurant[]; attractions: Attr
         description: 'Trattoria histórica a 3 minutos do Pantheon, em funcionamento desde 1938. Bucatini all\'amatriciana e saltimbocca alla romana impecáveis.',
         reviewCount: 3742,
         reviewSnippet: 'Tradição romana em cada garfada — um dos restaurantes mais honestos do centro.',
+        imageUrl: 'https://images.unsplash.com/photo-1466978913421-dad2ebd01d17?w=600&h=220&fit=crop&q=80&auto=format',
       },
       {
         name: 'Mercato Centrale Roma',
@@ -477,6 +485,7 @@ const CITY_EXTRAS: Record<string, { restaurants: Restaurant[]; attractions: Attr
         description: 'Mercado dentro da Estação Termini com bancas de produtores italianos. Pasta fresca, pane, gelato artesanal e vinho natural — tudo excelente.',
         reviewCount: 14328,
         reviewSnippet: 'Ideal para almoçar rápido e bem antes de pegar o trem. Voltei dois dias seguidos.',
+        imageUrl: 'https://images.unsplash.com/photo-1488459716781-31db52582fe9?w=600&h=220&fit=crop&q=80&auto=format',
       },
       {
         name: 'Piperno',
@@ -488,6 +497,7 @@ const CITY_EXTRAS: Record<string, { restaurants: Restaurant[]; attractions: Attr
         description: 'O mais tradicional restaurante da cozinha judaico-romana, especialidade em carciofi alla giudia (alcachofras fritas) e fritto misto. Desde 1860.',
         reviewCount: 3219,
         reviewSnippet: 'As alcachofras à la judia são as melhores de Roma — venha com fome.',
+        imageUrl: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=600&h=220&fit=crop&q=80&auto=format',
       },
       {
         name: 'L\'Asino d\'Oro',
@@ -499,6 +509,7 @@ const CITY_EXTRAS: Record<string, { restaurants: Restaurant[]; attractions: Attr
         description: 'Chef Lucio Sforza reinterpreta os ingredientes da Úmbria e do Lácio com técnica moderna. Um dos endereços mais criativos do bairro Monti.',
         reviewCount: 2634,
         reviewSnippet: 'Surpreendente — pratos simples executados com perfeição rara em Roma.',
+        imageUrl: 'https://images.unsplash.com/photo-1559329007-40df8a9345d8?w=600&h=220&fit=crop&q=80&auto=format',
       },
       {
         name: 'Gelateria del Teatro',
@@ -510,6 +521,7 @@ const CITY_EXTRAS: Record<string, { restaurants: Restaurant[]; attractions: Attr
         description: 'Gelato feito na hora com ingredientes sazonais — limão siciliano, pistache de Bronte, figos e combinações inusitadas. A 5 min da Piazza Navona.',
         reviewCount: 19847,
         reviewSnippet: 'O gelato de figo com nozes mudou minha relação com sorvete para sempre.',
+        imageUrl: 'https://images.unsplash.com/photo-1567206563114-c083777f1eaa?w=600&h=220&fit=crop&q=80&auto=format',
       },
     ],
     attractions: [
@@ -628,6 +640,7 @@ const CITY_EXTRAS: Record<string, { restaurants: Restaurant[]; attractions: Attr
         description: 'A rede de ramen mais famosa do Japão. Boxes individuais para comer concentrado, com personalização total do caldo. Funciona 24h.',
         reviewCount: 43218,
         reviewSnippet: 'A experiência de comer sozinho no box é única — o caldo de tonkotsu é viciante.',
+        imageUrl: 'https://images.unsplash.com/photo-1569050467447-ce54b3bbc37d?w=600&h=220&fit=crop&q=80&auto=format',
       },
       {
         name: 'Sukiyabashi Jiro Honten',
@@ -639,6 +652,7 @@ const CITY_EXTRAS: Record<string, { restaurants: Restaurant[]; attractions: Attr
         description: 'Três estrelas Michelin e inspiração do documentário "Jiro Dreams of Sushi". Menu único servido pelo mestre Jiro — reserva com meses de antecedência.',
         reviewCount: 3421,
         reviewSnippet: 'Uma refeição de 20 minutos que mudou para sempre o que penso sobre sushi.',
+        imageUrl: 'https://images.unsplash.com/photo-1617196034183-421b4040ed20?w=600&h=220&fit=crop&q=80&auto=format',
       },
       {
         name: 'Gonpachi Nishiazabu',
@@ -650,6 +664,7 @@ const CITY_EXTRAS: Record<string, { restaurants: Restaurant[]; attractions: Attr
         description: 'O izakaya que inspirou a cena do restaurante em Kill Bill. Robata, yakitori e saquê em ambiente histórico de dois andares com bambus.',
         reviewCount: 18743,
         reviewSnippet: 'A robata grelhada na frente da sua mesa e o ambiente incrível fazem tudo valer.',
+        imageUrl: 'https://images.unsplash.com/photo-1547592166-23ac45744acd?w=600&h=220&fit=crop&q=80&auto=format',
       },
       {
         name: 'Tsukiji Outer Market',
@@ -661,6 +676,7 @@ const CITY_EXTRAS: Record<string, { restaurants: Restaurant[]; attractions: Attr
         description: 'O mercado externo de Tsukiji permanece o melhor lugar de Tóquio para tamagoyaki, uni fresco, ostras e sushi de manhã cedo. Chegue antes das 9h.',
         reviewCount: 61234,
         reviewSnippet: 'O sushi mais fresco que já comi na vida — às 7h da manhã, ainda assim impecável.',
+        imageUrl: 'https://images.unsplash.com/photo-1534482421-64566f976cfa?w=600&h=220&fit=crop&q=80&auto=format',
       },
       {
         name: 'Afuri',
@@ -672,6 +688,7 @@ const CITY_EXTRAS: Record<string, { restaurants: Restaurant[]; attractions: Attr
         description: 'Ramen leve e perfumado com yuzu — diferente do estilo pesado de Sapporo. Caldo de frango com toque cítrico que surpreende pela elegância.',
         reviewCount: 24891,
         reviewSnippet: 'O ramen de yuzu shio é o mais refrescante e delicado que já experimentei.',
+        imageUrl: 'https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=600&h=220&fit=crop&q=80&auto=format',
       },
       {
         name: 'Uobei Sushi Shibuya',
@@ -683,6 +700,7 @@ const CITY_EXTRAS: Record<string, { restaurants: Restaurant[]; attractions: Attr
         description: 'Sushi por trilho com pedido por tablet e entrega por bala rápida na mesa — experiência ultra-eficiente tipicamente japonesa. Ótima relação preço-qualidade.',
         reviewCount: 38421,
         reviewSnippet: 'Pedir pelo tablet e receber em segundos é a coisa mais japonesa que você vai viver.',
+        imageUrl: 'https://images.unsplash.com/photo-1617196034738-26fc84d6e8b7?w=600&h=220&fit=crop&q=80&auto=format',
       },
       {
         name: 'Tempura Kondo',
@@ -694,6 +712,7 @@ const CITY_EXTRAS: Record<string, { restaurants: Restaurant[]; attractions: Attr
         description: 'Uma estrela Michelin em Ginza. O chef Fumio Kondo faz tempura vegetariana elevada ao nível de haute cuisine — aspargos, beterraba e pérola de milho.',
         reviewCount: 4218,
         reviewSnippet: 'A tempura de cenoura do chef Kondo tem mais sabor do que qualquer carne que já comi.',
+        imageUrl: 'https://images.unsplash.com/photo-1565557623262-b51c2513a641?w=600&h=220&fit=crop&q=80&auto=format',
       },
       {
         name: 'Torikizoku',
@@ -705,6 +724,7 @@ const CITY_EXTRAS: Record<string, { restaurants: Restaurant[]; attractions: Attr
         description: 'Rede de yakitori de preço fixo (¥ 298 por espeto) onde tudo no cardápio custa o mesmo. Informalidade japonesa pura — cerveja gelada, fumaça e companhia.',
         reviewCount: 52341,
         reviewSnippet: 'Pedir dez espetos de tudo e pagar preço popular — a melhor noite de Tóquio.',
+        imageUrl: 'https://images.unsplash.com/photo-1514190051997-0f6f39ca5cde?w=600&h=220&fit=crop&q=80&auto=format',
       },
       {
         name: 'Kikunoi Akasaka',
@@ -716,6 +736,7 @@ const CITY_EXTRAS: Record<string, { restaurants: Restaurant[]; attractions: Attr
         description: 'Kaiseki tradicional em ambiente de jardim japonês. Cada prato reflete a estação do ano com ingredientes sazonais selecionados. Três estrelas Michelin.',
         reviewCount: 2891,
         reviewSnippet: 'O kaiseki mais poético que já vivi — cada prato é uma pintura comestível.',
+        imageUrl: 'https://images.unsplash.com/photo-1579584425555-c3ce17fd4351?w=600&h=220&fit=crop&q=80&auto=format',
       },
       {
         name: 'Nakamura-ya Curry',
@@ -727,6 +748,7 @@ const CITY_EXTRAS: Record<string, { restaurants: Restaurant[]; attractions: Attr
         description: 'O curry indo-japonês original, desenvolvido na Nakamura-ya desde 1927. Receita mais encorpada e aromática que os currys comuns — com pão naan fresco.',
         reviewCount: 9123,
         reviewSnippet: 'Um curry que resiste ao tempo — e que entende os dois mundos que mistura.',
+        imageUrl: 'https://images.unsplash.com/photo-1585937421612-70a008356fbe?w=600&h=220&fit=crop&q=80&auto=format',
       },
     ],
     attractions: [

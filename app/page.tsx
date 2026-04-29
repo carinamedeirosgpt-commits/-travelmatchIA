@@ -38,41 +38,50 @@ function SwipeCard({
           style={{ width: `${(cursor / poolSize) * 100}%` }}
         />
       </div>
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 flex flex-col gap-3">
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <h3 className="text-lg font-bold text-slate-900">{r.name}</h3>
-            <p className="text-slate-500 text-sm">{r.cuisine} · {r.neighborhood}</p>
-          </div>
-          <span className="shrink-0 text-emerald-700 font-bold text-base bg-emerald-50 rounded-lg px-3 py-1">
-            {r.priceRange}
-          </span>
-        </div>
-        <div className="flex items-center gap-3">
-          <Stars rating={r.rating} />
-          <span className="text-xs text-slate-400">{r.reviewCount.toLocaleString('pt-BR')} avaliações</span>
-        </div>
-        {r.reviewSnippet && (
-          <p className="text-xs text-slate-500 italic border-l-2 border-emerald-200 pl-3">
-            &ldquo;{r.reviewSnippet}&rdquo;
-          </p>
+      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden flex flex-col">
+        {r.imageUrl && (
+          <img
+            src={r.imageUrl}
+            alt={r.name}
+            className="w-full h-48 object-cover"
+          />
         )}
-        <p className="text-slate-600 text-sm leading-relaxed border-t border-slate-100 pt-3">
-          {r.description}
-        </p>
-        <div className="flex gap-3 mt-1">
-          <button
-            onClick={onRefuse}
-            className="flex-1 rounded-xl py-3 text-sm font-semibold border-2 border-slate-200 text-slate-500 hover:border-rose-300 hover:text-rose-500 hover:bg-rose-50 transition-colors"
-          >
-            ✕ Recusar
-          </button>
-          <button
-            onClick={onAccept}
-            className="flex-1 rounded-xl py-3 text-sm font-semibold bg-emerald-500 text-white hover:bg-emerald-600 transition-colors"
-          >
-            ✓ Aceitar
-          </button>
+        <div className="p-6 flex flex-col gap-3">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <h3 className="text-lg font-bold text-slate-900">{r.name}</h3>
+              <p className="text-slate-500 text-sm">{r.cuisine} · {r.neighborhood}</p>
+            </div>
+            <span className="shrink-0 text-emerald-700 font-bold text-base bg-emerald-50 rounded-lg px-3 py-1">
+              {r.priceRange}
+            </span>
+          </div>
+          <div className="flex items-center gap-3">
+            <Stars rating={r.rating} />
+            <span className="text-xs text-slate-400">{r.reviewCount.toLocaleString('pt-BR')} avaliações</span>
+          </div>
+          {r.reviewSnippet && (
+            <p className="text-xs text-slate-500 italic border-l-2 border-emerald-200 pl-3">
+              &ldquo;{r.reviewSnippet}&rdquo;
+            </p>
+          )}
+          <p className="text-slate-600 text-sm leading-relaxed border-t border-slate-100 pt-3">
+            {r.description}
+          </p>
+          <div className="flex gap-3 mt-1">
+            <button
+              onClick={onRefuse}
+              className="flex-1 rounded-xl py-3 text-sm font-semibold border-2 border-slate-200 text-slate-500 hover:border-rose-300 hover:text-rose-500 hover:bg-rose-50 transition-colors"
+            >
+              ✕ Recusar
+            </button>
+            <button
+              onClick={onAccept}
+              className="flex-1 rounded-xl py-3 text-sm font-semibold bg-emerald-500 text-white hover:bg-emerald-600 transition-colors"
+            >
+              ✓ Aceitar
+            </button>
+          </div>
         </div>
       </div>
     </div>
