@@ -382,7 +382,7 @@ export type Attraction = {
   description: string
   reviewCount: number
   reviewSnippet: string
-  imageUrl?: string
+  imageUrl: string
 }
 
 // ── Trip summary ──────────────────────────────────────────────────────────────
@@ -534,6 +534,7 @@ const CITY_EXTRAS: Record<string, { restaurants: Restaurant[]; attractions: Attr
         description: 'O anfiteatro mais famoso do mundo, construído em 72 d.C. O ingresso inclui o Fórum Romano e o Palatino — reserve com antecedência.',
         reviewCount: 48234,
         reviewSnippet: 'Nenhuma foto prepara para a escala real do Coliseu — absolutamente impressionante.',
+        imageUrl: 'https://images.unsplash.com/photo-1552465855-39f2e0f7be3b?w=600&h=220&fit=crop&q=80&auto=format',
       },
       {
         name: 'Museus do Vaticano e Capela Sistina',
@@ -544,6 +545,7 @@ const CITY_EXTRAS: Record<string, { restaurants: Restaurant[]; attractions: Attr
         description: 'O maior museu de arte sacra do mundo, com o teto da Sistina pintado por Michelangelo. Reserve com semanas de antecedência no verão.',
         reviewCount: 52891,
         reviewSnippet: 'A Capela Sistina ao vivo deixa sem fala — chegue cedo para aproveitar melhor.',
+        imageUrl: 'https://images.unsplash.com/photo-1568515387610-f9d35e9f7ac4?w=600&h=220&fit=crop&q=80&auto=format',
       },
       {
         name: 'Fontana di Trevi e Pantheon',
@@ -554,6 +556,7 @@ const CITY_EXTRAS: Record<string, { restaurants: Restaurant[]; attractions: Attr
         description: 'Os dois pontos mais icônicos do centro histórico, a 10 min a pé um do outro. Melhor visitados cedo pela manhã ou à noite.',
         reviewCount: 63142,
         reviewSnippet: 'Ver a Fontana di Trevi ao amanhecer quase sem turistas é mágico — acorde cedo.',
+        imageUrl: 'https://images.unsplash.com/photo-1525874684015-58379d421a52?w=600&h=220&fit=crop&q=80&auto=format',
       },
       {
         name: 'Galeria Borghese',
@@ -564,6 +567,7 @@ const CITY_EXTRAS: Record<string, { restaurants: Restaurant[]; attractions: Attr
         description: 'Uma das coleções de arte mais impressionantes do mundo em visitas limitadas a 2h. Bernini, Caravaggio, Tiziano — reserve com semanas de antecedência.',
         reviewCount: 21347,
         reviewSnippet: 'O Apolo e Dafne de Bernini ao vivo é literalmente de tirar o fôlego.',
+        imageUrl: 'https://images.unsplash.com/photo-1531512073830-ba890ca4eba6?w=600&h=220&fit=crop&q=80&auto=format',
       },
       {
         name: 'Campo de\' Fiori e arredores',
@@ -574,6 +578,7 @@ const CITY_EXTRAS: Record<string, { restaurants: Restaurant[]; attractions: Attr
         description: 'Praça vibrante com mercado pela manhã e vida noturna intensa após o anoitecer. Rodeia de vinoteche, bares e uma das melhores livrarias de Roma.',
         reviewCount: 18923,
         reviewSnippet: 'O mercado de manhã e o aperitivo à tardinha — dois mundos no mesmo lugar.',
+        imageUrl: 'https://images.unsplash.com/photo-1506377247377-2a5b3b417ebb?w=600&h=220&fit=crop&q=80&auto=format',
       },
       {
         name: 'Buraco da Fechadura dos Cavalieri di Malta',
@@ -584,6 +589,7 @@ const CITY_EXTRAS: Record<string, { restaurants: Restaurant[]; attractions: Attr
         description: 'Mirante improvável: olhando pelo buraco da fechadura do portão dos Cavaleiros de Malta, você vê o domo de São Pedro enquadrado perfeitamente por ciprestes.',
         reviewCount: 9841,
         reviewSnippet: 'Um buraco de fechadura que emoldura São Pedro — vale cada segundo da fila.',
+        imageUrl: 'https://images.unsplash.com/photo-1461295625951-3bc5f3fcd3ff?w=600&h=220&fit=crop&q=80&auto=format',
       },
       {
         name: 'Piazza Navona ao anoitecer',
@@ -594,6 +600,7 @@ const CITY_EXTRAS: Record<string, { restaurants: Restaurant[]; attractions: Attr
         description: 'A praça barroca mais grandiosa de Roma, com a Fontana dei Quattro Fiumi de Bernini ao centro. Artistas de rua, sorveterias e cafés ao redor.',
         reviewCount: 34781,
         reviewSnippet: 'Sentar em frente à fonte de Bernini com um gelato na mão — isso é Roma.',
+        imageUrl: 'https://images.unsplash.com/photo-1540208400-c3c2d9484c37?w=600&h=220&fit=crop&q=80&auto=format',
       },
       {
         name: 'Catacumbas de San Callisto',
@@ -604,6 +611,7 @@ const CITY_EXTRAS: Record<string, { restaurants: Restaurant[]; attractions: Attr
         description: 'Vinte quilômetros de túneis subterrâneos com 500 mil sepulturas cristãs dos séculos II ao IV. Visita guiada obrigatória — experiência fascinante e arrepiante.',
         reviewCount: 12483,
         reviewSnippet: 'Uma Roma completamente diferente, subterrânea e silenciosa. Imperdível para quem gosta de história.',
+        imageUrl: 'https://images.unsplash.com/photo-1534267602255-fa79ef34c3e3?w=600&h=220&fit=crop&q=80&auto=format',
       },
       {
         name: 'Mercado de Testaccio',
@@ -614,6 +622,7 @@ const CITY_EXTRAS: Record<string, { restaurants: Restaurant[]; attractions: Attr
         description: 'O mercado de bairro mais autêntico de Roma, funcionando no mesmo local desde os anos 1800. Queijos, embutidos, frutas sazonais e comida para viagem.',
         reviewCount: 8234,
         reviewSnippet: 'Aqui você come como um romano de verdade — sem cardápio em inglês e melhor assim.',
+        imageUrl: 'https://images.unsplash.com/photo-1596040033229-a9821ebd058d?w=600&h=220&fit=crop&q=80&auto=format',
       },
       {
         name: 'Piazza del Popolo e Villa Borghese',
@@ -624,6 +633,7 @@ const CITY_EXTRAS: Record<string, { restaurants: Restaurant[]; attractions: Attr
         description: 'Praça neoclássica com duas igrejas gêmeas e um obelisco egípcio, seguida de uma caminhada pelo parque Villa Borghese com vista panorâmica da cidade.',
         reviewCount: 16234,
         reviewSnippet: 'A vista do terraço do Pincio sobre Roma ao pôr do sol é a mais bonita da cidade.',
+        imageUrl: 'https://images.unsplash.com/photo-1524413685869-e21c9f3c98d3?w=600&h=220&fit=crop&q=80&auto=format',
       },
     ],
   },
@@ -761,6 +771,7 @@ const CITY_EXTRAS: Record<string, { restaurants: Restaurant[]; attractions: Attr
         description: 'O templo mais antigo de Tóquio, fundado em 645 d.C. A Nakamise-dori, rua de souvenir até o templo, é uma das mais fotogênicas do Japão.',
         reviewCount: 87341,
         reviewSnippet: 'O portão Kaminarimon de madrugada, sem ninguém, é uma das fotos mais incríveis do Japão.',
+        imageUrl: 'https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?w=600&h=220&fit=crop&q=80&auto=format',
       },
       {
         name: 'teamLab Planets',
@@ -771,6 +782,7 @@ const CITY_EXTRAS: Record<string, { restaurants: Restaurant[]; attractions: Attr
         description: 'Instalações onde você caminha descalço por espelhos infinitos, flores digitais e jardins de luz. Experiência única no mundo.',
         reviewCount: 52341,
         reviewSnippet: 'Entrei descrente e saí completamente transformado — não existe nada igual no planeta.',
+        imageUrl: 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=600&h=220&fit=crop&q=80&auto=format',
       },
       {
         name: 'Tokyo Skytree',
@@ -781,6 +793,7 @@ const CITY_EXTRAS: Record<string, { restaurants: Restaurant[]; attractions: Attr
         description: 'A torre mais alta do Japão (634 m) com vista de 360° da cidade. Em dia claro dá para ver o Monte Fuji. Melhor ao anoitecer.',
         reviewCount: 64218,
         reviewSnippet: 'Ver Tóquio do alto ao anoitecer com o Fuji no horizonte é de partir o coração de beleza.',
+        imageUrl: 'https://images.unsplash.com/photo-1559734840-f9d997e25e98?w=600&h=220&fit=crop&q=80&auto=format',
       },
       {
         name: 'Santuário Meiji Jingu',
@@ -791,6 +804,7 @@ const CITY_EXTRAS: Record<string, { restaurants: Restaurant[]; attractions: Attr
         description: 'Santuário dedicado ao Imperador Meiji, no coração de uma floresta artificial de 100 hectares — surreal estar nesse silêncio a 5 min de Shinjuku.',
         reviewCount: 43218,
         reviewSnippet: 'Entrar na floresta e esquecer que você está numa metrópole de 14 milhões — único.',
+        imageUrl: 'https://images.unsplash.com/photo-1528360983277-13d401cdc186?w=600&h=220&fit=crop&q=80&auto=format',
       },
       {
         name: 'Shibuya Crossing e Scramble Square',
@@ -801,6 +815,7 @@ const CITY_EXTRAS: Record<string, { restaurants: Restaurant[]; attractions: Attr
         description: 'O cruzamento mais famoso do mundo, com 3.000 pessoas cruzando a cada sinal verde. O mirante do Scramble Square no 46º andar oferece a vista definitiva.',
         reviewCount: 91234,
         reviewSnippet: 'Ficar no meio do cruzamento e olhar para todos os lados é de cair o queixo.',
+        imageUrl: 'https://images.unsplash.com/photo-1542051841857-5f90071e7483?w=600&h=220&fit=crop&q=80&auto=format',
       },
       {
         name: 'Harajuku — Takeshita Street e Omotesando',
@@ -811,6 +826,7 @@ const CITY_EXTRAS: Record<string, { restaurants: Restaurant[]; attractions: Attr
         description: 'Dois mundos em 10 min de caminhada: a excentricidade máxima da Takeshita Street e a elegância de Omotesando, a "Champs-Élysées japonesa".',
         reviewCount: 38921,
         reviewSnippet: 'Passei de cosplay extremo para boutiques de luxo em 10 minutos — só possível em Tóquio.',
+        imageUrl: 'https://images.unsplash.com/photo-1503614472-8c93d56e92ce?w=600&h=220&fit=crop&q=80&auto=format',
       },
       {
         name: 'Parque de Ueno e museus',
@@ -821,6 +837,7 @@ const CITY_EXTRAS: Record<string, { restaurants: Restaurant[]; attractions: Attr
         description: 'O maior parque urbano de Tóquio concentra o Museu Nacional, o zoo, o Museu de Arte Ocidental e o planetário. Na primavera, os cerejeiras são inesquecíveis.',
         reviewCount: 56123,
         reviewSnippet: 'Na época das cerejeiras é o lugar mais bonito do Japão — chegue antes do amanhecer.',
+        imageUrl: 'https://images.unsplash.com/photo-1557659874-5c6a1c93a08e?w=600&h=220&fit=crop&q=80&auto=format',
       },
       {
         name: 'Shinjuku Gyoen',
@@ -831,6 +848,7 @@ const CITY_EXTRAS: Record<string, { restaurants: Restaurant[]; attractions: Attr
         description: 'O jardim mais bonito de Tóquio, com seções japonesa, francesa e inglesa. Famoso pelas cerejeiras em março-abril, mas impressionante em qualquer estação.',
         reviewCount: 34821,
         reviewSnippet: 'Uma tarde no Gyoen desacelera completamente — é impossível não ficar por horas.',
+        imageUrl: 'https://images.unsplash.com/photo-1546587348-d4b0e5d3a4df?w=600&h=220&fit=crop&q=80&auto=format',
       },
       {
         name: 'Akihabara — eletrônicos e cultura pop',
@@ -841,6 +859,7 @@ const CITY_EXTRAS: Record<string, { restaurants: Restaurant[]; attractions: Attr
         description: 'O epicentro mundial de anime, manga e eletrônicos. Lojas de 8 andares de componentes eletrônicos, cafés temáticos e arcades de última geração.',
         reviewCount: 47231,
         reviewSnippet: 'Entrei para comprar uma coisa e saí três horas depois com bolsos cheios e sorrindo.',
+        imageUrl: 'https://images.unsplash.com/photo-1503146234-f097d2b929ae?w=600&h=220&fit=crop&q=80&auto=format',
       },
       {
         name: 'Ginza — Arte e Arquitetura',
@@ -851,6 +870,7 @@ const CITY_EXTRAS: Record<string, { restaurants: Restaurant[]; attractions: Attr
         description: 'O bairro mais sofisticado de Tóquio, com galerias de arte, cafés históricos e a arquitetura da Ginza Six. Aos domingos, a rua principal fecha para pedestres.',
         reviewCount: 28341,
         reviewSnippet: 'Caminhar por Ginza no domingo sem carros é uma das experiências mais agradáveis de Tóquio.',
+        imageUrl: 'https://images.unsplash.com/photo-1513407030348-c983a97b98d8?w=600&h=220&fit=crop&q=80&auto=format',
       },
     ],
   },

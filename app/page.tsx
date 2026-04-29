@@ -88,6 +88,69 @@ function SwipeCard({
   )
 }
 
+function AttractionSwipeCard({
+  attraction: a,
+  cursor,
+  poolSize,
+  onAccept,
+  onRefuse,
+}: {
+  attraction: Attraction
+  cursor: number
+  poolSize: number
+  onAccept: () => void
+  onRefuse: () => void
+}) {
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="flex items-center justify-between text-xs text-slate-400">
+        <span>{cursor + 1} de {poolSize}</span>
+      </div>
+      <div className="w-full bg-slate-100 rounded-full h-1.5">
+        <div
+          className="bg-violet-400 h-1.5 rounded-full transition-all"
+          style={{ width: `${(cursor / poolSize) * 100}%` }}
+        />
+      </div>
+      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden flex flex-col">
+        {a.imageUrl && (
+          <img src={a.imageUrl} alt={a.name} className="w-full h-48 object-cover" />
+        )}
+        <div className="p-6 flex flex-col gap-3">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <h3 className="text-lg font-bold text-slate-900">{a.name}</h3>
+              <p className="text-slate-500 text-sm">{a.type} · {a.neighborhood}</p>
+            </div>
+            <span className="shrink-0 text-violet-700 font-bold text-sm bg-violet-50 rounded-lg px-3 py-1">
+              {a.duration}
+            </span>
+          </div>
+          {a.reviewSnippet && (
+            <p className="text-xs text-slate-500 italic border-l-2 border-violet-200 pl-3">
+              &ldquo;{a.reviewSnippet}&rdquo;
+            </p>
+          )}
+          <div className="flex gap-3 mt-1">
+            <button
+              onClick={onRefuse}
+              className="flex-1 rounded-xl py-3 text-sm font-semibold border-2 border-slate-200 text-slate-500 hover:border-rose-300 hover:text-rose-500 hover:bg-rose-50 transition-colors"
+            >
+              ✕ Recusar
+            </button>
+            <button
+              onClick={onAccept}
+              className="flex-1 rounded-xl py-3 text-sm font-semibold bg-violet-500 text-white hover:bg-violet-600 transition-colors"
+            >
+              ✓ Aceitar
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function Stars({ rating }: { rating: number }) {
   return (
     <span className="flex items-center gap-1 text-amber-400 font-semibold text-sm">
@@ -136,7 +199,6 @@ export default function Home() {
   const [hotelCursor, setHotelCursor] = useState(0)
   const [lunchCursor, setLunchCursor] = useState(0)
   const [dinnerCursor, setDinnerCursor] = useState(0)
-  const [shownAttractions, setShownAttractions] = useState<(Attraction | null)[]>([])
   const [attractionCursor, setAttractionCursor] = useState(0)
 
   // selections
@@ -161,8 +223,7 @@ export default function Home() {
     setHotelCursor(VISIBLE)
     setLunchCursor(0)
     setDinnerCursor(0)
-    setShownAttractions(a.slice(0, VISIBLE))
-    setAttractionCursor(VISIBLE)
+    setAttractionCursor(0)
 
     setSelectedHotel(null)
     setSelectedRestaurants([])
@@ -201,33 +262,20 @@ export default function Home() {
   }
   function refuseDinner() { setDinnerCursor(c => c + 1) }
 
-  function dismissAttraction(slotIdx: number) {
-    setShownAttractions(prev => {
-      const next = [...prev]
-      if (attractionCursor < attractionPool.length) {
-        next[slotIdx] = attractionPool[attractionCursor]
-        setAttractionCursor(c => c + 1)
-      } else {
-        next[slotIdx] = null
-      }
-      return next
-    })
+  const currentAttraction = attractionPool[attractionCursor] ?? null
+  const attractionDone = attractionPool.length > 0 && attractionCursor >= attractionPool.length
+
+  function acceptAttraction(a: Attraction) {
+    setSelectedAttractions(prev => [...prev, a])
+    setAttractionCursor(c => c + 1)
   }
+  function refuseAttraction() { setAttractionCursor(c => c + 1) }
 
   function selectHotel(rec: Recommendation) {
     setSelectedHotel(prev => prev?.name === rec.name ? null : rec)
   }
 
-  function toggleAttraction(a: Attraction) {
-    setSelectedAttractions(prev =>
-      prev.some(x => x.name === a.name)
-        ? prev.filter(x => x.name !== a.name)
-        : [...prev, a]
-    )
-  }
-
   const allHotelsDismissed = shownHotels.length > 0 && shownHotels.every(h => h === null)
-  const allAttractionsDismissed = shownAttractions.length > 0 && shownAttractions.every(a => a === null)
 
   return (
     <main className="min-h-screen flex flex-col items-center px-4 py-16">
@@ -447,58 +495,22 @@ export default function Home() {
             title="Pontos turísticos e atividades"
             subtitle="O que fazer e visitar durante a viagem"
           />
-          <div className="flex flex-col gap-5">
-            {allAttractionsDismissed ? (
-              <p className="text-slate-500 text-sm">Não temos mais opções para essa categoria no momento.</p>
-            ) : attractionPool.length === 0 ? (
-              <p className="text-slate-500 text-sm">Nenhuma atração encontrada para este destino ainda.</p>
-            ) : shownAttractions.map((a, i) => {
-              if (a === null) return null
-              return (
-                <div key={a.name} className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 flex flex-col gap-3">
-                  <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <h3 className="text-lg font-bold text-slate-900">{a.name}</h3>
-                      <p className="text-slate-500 text-sm">{a.type} · {a.neighborhood}</p>
-                    </div>
-                    <span className="shrink-0 text-violet-700 font-bold text-sm bg-violet-50 rounded-lg px-3 py-1">
-                      {a.duration}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-slate-400">{a.reviewCount.toLocaleString('pt-BR')} avaliações</span>
-                  </div>
-                  <p className="text-xs text-slate-400">Entrada: {a.price}</p>
-                  {a.reviewSnippet && (
-                    <p className="text-xs text-slate-500 italic border-l-2 border-violet-200 pl-3">
-                      &ldquo;{a.reviewSnippet}&rdquo;
-                    </p>
-                  )}
-                  <p className="text-slate-600 text-sm leading-relaxed border-t border-slate-100 pt-3">
-                    {a.description}
-                  </p>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => toggleAttraction(a)}
-                      className={`flex-1 rounded-lg py-2 text-sm font-semibold transition-colors ${
-                        selectedAttractions.some(x => x.name === a.name)
-                          ? 'bg-violet-600 text-white'
-                          : 'border border-violet-500 text-violet-600 hover:bg-violet-50'
-                      }`}
-                    >
-                      {selectedAttractions.some(x => x.name === a.name) ? 'Adicionado' : 'Adicionar'}
-                    </button>
-                    <button
-                      onClick={() => dismissAttraction(i)}
-                      className="rounded-lg py-2 px-3 text-sm font-semibold border border-slate-200 text-slate-500 hover:bg-slate-50 transition-colors whitespace-nowrap"
-                    >
-                      Ver outra opção
-                    </button>
-                  </div>
-                </div>
-              )
-            })}
-          </div>
+          {attractionPool.length === 0 ? (
+            <p className="text-slate-500 text-sm">Nenhuma atração encontrada para este destino ainda.</p>
+          ) : attractionDone ? (
+            <div className="bg-slate-50 border border-slate-200 rounded-2xl p-6 text-center">
+              <p className="font-semibold text-slate-600 text-sm">Atrações revisadas</p>
+              <p className="text-xs text-slate-400 mt-1">{selectedAttractions.length} aceita(s)</p>
+            </div>
+          ) : currentAttraction && (
+            <AttractionSwipeCard
+              attraction={currentAttraction}
+              cursor={attractionCursor}
+              poolSize={attractionPool.length}
+              onAccept={() => acceptAttraction(currentAttraction)}
+              onRefuse={refuseAttraction}
+            />
+          )}
         </div>
       )}
 
