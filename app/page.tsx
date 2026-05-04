@@ -325,6 +325,7 @@ export default function Home() {
   const [selectedRestaurants, setSelectedRestaurants] = useState<Restaurant[]>([])
   const [selectedAttractions, setSelectedAttractions] = useState<Attraction[]>([])
   const [customItinerary, setCustomItinerary] = useState<ItineraryDay[]>([])
+  const [tripSaved, setTripSaved] = useState(false)
 
   function handleSearch() {
     if (!query.trim()) return
@@ -349,6 +350,7 @@ export default function Home() {
     setSelectedRestaurants([])
     setSelectedAttractions([])
     setCustomItinerary([])
+    setTripSaved(false)
     setStep(1)
   }
 
@@ -785,13 +787,21 @@ export default function Home() {
             </div>
           )}
 
-          {/* Botão gerar roteiro */}
-          {summary && (
+          {/* Botão gerar roteiro / salvar */}
+          {summary && customItinerary.length === 0 && (
             <button
               onClick={handleGenerateCustomItinerary}
               className="w-full rounded-xl bg-blue-600 py-3 text-white font-semibold text-base hover:bg-blue-700 active:bg-blue-800 transition-colors"
             >
               Gerar roteiro da minha viagem
+            </button>
+          )}
+          {customItinerary.length > 0 && !tripSaved && (
+            <button
+              onClick={() => setTripSaved(true)}
+              className="w-full rounded-xl bg-emerald-600 py-3 text-white font-semibold text-base hover:bg-emerald-700 active:bg-emerald-800 transition-colors"
+            >
+              Salvar minha viagem
             </button>
           )}
 
@@ -833,6 +843,61 @@ export default function Home() {
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      {/* ── Minha viagem salva ─────────────────────────────────────────── */}
+      {tripSaved && summary && (
+        <div className="w-full max-w-2xl mt-10 mb-8">
+
+          {/* Cabeçalho da trip */}
+          <div className="bg-blue-600 rounded-2xl p-6 mb-6 text-white">
+            <p className="text-blue-200 text-xs font-semibold uppercase tracking-widest mb-2">Minha viagem salva</p>
+            <h2 className="text-2xl font-bold mb-1">{summary.destination}</h2>
+            <p className="text-blue-100 text-sm">
+              {summary.duration} {summary.duration === 1 ? 'dia' : 'dias'} · {summary.objectives.join(' · ')}
+            </p>
+            {selectedHotel && (
+              <div className="mt-4 bg-white/10 rounded-xl px-4 py-3">
+                <p className="text-blue-200 text-xs font-semibold uppercase tracking-wider mb-1">Hospedagem</p>
+                <p className="font-semibold text-white">{selectedHotel.name}</p>
+                <p className="text-blue-100 text-sm">{selectedHotel.price}</p>
+              </div>
+            )}
+          </div>
+
+          {/* Cards por dia */}
+          <div className="flex flex-col gap-5">
+            {customItinerary.map(day => (
+              <div key={day.day} className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+                <div className="px-6 py-4 bg-slate-50 border-b border-slate-100">
+                  <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Dia {day.day}</p>
+                  <p className="text-base font-bold text-slate-800">{day.label}</p>
+                </div>
+                <div className="divide-y divide-slate-50">
+                  {day.slots.map(slot => (
+                    <div key={slot.period} className="px-6 py-4 flex gap-4">
+                      <div className="shrink-0 w-14 pt-0.5">
+                        <span className={`text-xs font-bold uppercase ${
+                          slot.period === 'Manhã'  ? 'text-amber-500'   :
+                          slot.period === 'Almoço' ? 'text-emerald-500' :
+                          slot.period === 'Tarde'  ? 'text-violet-500'  :
+                                                     'text-blue-500'
+                        }`}>
+                          {slot.period}
+                        </span>
+                      </div>
+                      <div className="flex-1">
+                        <p className="font-semibold text-slate-800 text-sm">{slot.title}</p>
+                        <p className="text-xs text-slate-400 mb-1">{slot.subtitle}</p>
+                        <p className="text-xs text-slate-500 leading-relaxed">{slot.note}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
