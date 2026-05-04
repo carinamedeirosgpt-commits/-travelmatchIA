@@ -7,6 +7,7 @@ import {
   type Attraction,
   type TripSummary,
   type ItineraryDay,
+  type ItinerarySlot,
   getRecommendations,
   getRestaurants,
   getAttractions,
@@ -41,6 +42,70 @@ function ObjectiveTag({ objectives }: { objectives: string[] }) {
       {tag.label}
     </p>
   )
+}
+
+function buildCustomItinerary(
+  hotel: Recommendation | null,
+  restaurants: Restaurant[],
+  attractions: Attraction[],
+  duration: number,
+): ItineraryDay[] {
+  const isNightlife = (r: Restaurant) =>
+    r.type === 'bar' || r.type === 'rooftop' || r.type === 'nightlife'
+
+  const lunchPool   = restaurants.filter(r => !isNightlife(r) && (r.mealType === 'lunch'  || r.mealType === 'both'))
+  const dinnerPool  = restaurants.filter(r => !isNightlife(r) && (r.mealType === 'dinner' || r.mealType === 'both'))
+  const nightPool   = restaurants.filter(isNightlife)
+
+  const locationName = hotel?.location.split(',')[0] ?? 'destino'
+
+  function firstSentence(text: string) { return text.split('.')[0] + '.' }
+
+  let ai = 0, li = 0, di = 0, ni = 0
+  const days: ItineraryDay[] = []
+
+  for (let d = 1; d <= duration; d++) {
+    const slots: ItinerarySlot[] = []
+
+    // Manhã: atração ou livre
+    if (ai < attractions.length) {
+      const a = attractions[ai++]
+      slots.push({ period: 'Manhã', title: a.name, subtitle: `${a.type} · ${a.neighborhood}`, note: `Duração: ${a.duration}. ${firstSentence(a.description)}`, type: 'attraction' })
+    } else {
+      slots.push({ period: 'Manhã', title: 'Manhã livre', subtitle: 'Passeio livre', note: 'Explore o destino no seu próprio ritmo.', type: 'free' })
+    }
+
+    // Almoço: restaurante de almoço ou livre
+    if (li < lunchPool.length) {
+      const r = lunchPool[li++]
+      slots.push({ period: 'Almoço', title: r.name, subtitle: `${r.cuisine} · ${r.neighborhood}`, note: firstSentence(r.description), type: 'restaurant' })
+    } else {
+      slots.push({ period: 'Almoço', title: 'Almoço livre', subtitle: 'Escolha onde quiser', note: 'Descubra os restaurantes locais.', type: 'free' })
+    }
+
+    // Tarde: segunda atração ou livre
+    if (ai < attractions.length) {
+      const a = attractions[ai++]
+      slots.push({ period: 'Tarde', title: a.name, subtitle: `${a.type} · ${a.neighborhood}`, note: `Duração: ${a.duration}. ${firstSentence(a.description)}`, type: 'attraction' })
+    } else {
+      slots.push({ period: 'Tarde', title: 'Tarde livre', subtitle: 'Passeio livre', note: 'Descubra o bairro ao seu ritmo.', type: 'free' })
+    }
+
+    // Noite: bar/nightlife > jantar > livre
+    if (ni < nightPool.length) {
+      const r = nightPool[ni++]
+      slots.push({ period: 'Noite', title: r.name, subtitle: `${r.cuisine} · ${r.neighborhood}`, note: firstSentence(r.description), type: 'restaurant' })
+    } else if (di < dinnerPool.length) {
+      const r = dinnerPool[di++]
+      slots.push({ period: 'Noite', title: r.name, subtitle: `${r.cuisine} · ${r.neighborhood}`, note: firstSentence(r.description), type: 'restaurant' })
+    } else {
+      slots.push({ period: 'Noite', title: 'Noite livre', subtitle: 'Explore o destino', note: 'Descubra a vida noturna local.', type: 'free' })
+    }
+
+    days.push({ day: d, label: `Dia ${d} — ${locationName}`, slots })
+  }
+
+  return days
 }
 
 function SwipeCard({
@@ -240,6 +305,7 @@ export default function Home() {
   const [selectedHotel, setSelectedHotel] = useState<Recommendation | null>(null)
   const [selectedRestaurants, setSelectedRestaurants] = useState<Restaurant[]>([])
   const [selectedAttractions, setSelectedAttractions] = useState<Attraction[]>([])
+  const [customItinerary, setCustomItinerary] = useState<ItineraryDay[]>([])
 
   function handleSearch() {
     if (!query.trim()) return
@@ -263,6 +329,7 @@ export default function Home() {
     setSelectedHotel(null)
     setSelectedRestaurants([])
     setSelectedAttractions([])
+    setCustomItinerary([])
     setStep(1)
   }
 
@@ -311,6 +378,18 @@ export default function Home() {
   }
 
   const allHotelsDismissed = shownHotels.length > 0 && shownHotels.every(h => h === null)
+
+  // "Minha viagem" derived categories
+  const isNightlifeVenue = (r: Restaurant) =>
+    r.type === 'bar' || r.type === 'rooftop' || r.type === 'nightlife'
+  const lunchSelected    = selectedRestaurants.filter(r => !isNightlifeVenue(r) && (r.mealType === 'lunch'  || r.mealType === 'both'))
+  const dinnerSelected   = selectedRestaurants.filter(r => !isNightlifeVenue(r) && (r.mealType === 'dinner' || r.mealType === 'both'))
+  const nightlifeSelected = selectedRestaurants.filter(isNightlifeVenue)
+
+  function handleGenerateCustomItinerary() {
+    if (!summary) return
+    setCustomItinerary(buildCustomItinerary(selectedHotel, selectedRestaurants, selectedAttractions, summary.duration))
+  }
 
   return (
     <main className="min-h-screen flex flex-col items-center px-4 py-16">
@@ -605,26 +684,44 @@ export default function Home() {
       {/* ── Minha viagem ───────────────────────────────────────────────── */}
       {(selectedHotel || selectedRestaurants.length > 0 || selectedAttractions.length > 0) && (
         <div className="w-full max-w-2xl mt-10 mb-4">
-          <p className="text-xs font-semibold text-blue-500 uppercase tracking-widest mb-3">Selecionados</p>
-          <h2 className="text-xl font-semibold text-slate-700 mb-6">Minha viagem</h2>
+          <p className="text-xs font-semibold text-blue-500 uppercase tracking-widest mb-3">Minha viagem</p>
+          <h2 className="text-xl font-semibold text-slate-700 mb-6">Itens selecionados</h2>
 
+          {/* Hotel */}
           {selectedHotel && (
             <div className="mb-5">
-              <p className="text-xs font-semibold text-blue-400 uppercase tracking-widest mb-2">Hotel</p>
-              <div className="bg-white rounded-xl border border-blue-100 p-4">
-                <p className="font-semibold text-slate-800">{selectedHotel.name}</p>
-                <p className="text-sm text-slate-500">{selectedHotel.location} · {selectedHotel.price}</p>
+              <p className="text-xs font-semibold text-blue-400 uppercase tracking-widest mb-2">Hospedagem</p>
+              <div className="bg-white rounded-xl border border-blue-100 p-4 flex items-start justify-between gap-4">
+                <div>
+                  <p className="font-semibold text-slate-800">{selectedHotel.name}</p>
+                  <p className="text-sm text-slate-500">{selectedHotel.location}</p>
+                </div>
+                <span className="shrink-0 text-blue-700 font-semibold text-sm bg-blue-50 rounded-lg px-2.5 py-1">{selectedHotel.price}</span>
               </div>
             </div>
           )}
 
-          {selectedRestaurants.length > 0 && (
+          {/* Almoço */}
+          {lunchSelected.length > 0 && (
             <div className="mb-5">
-              <p className="text-xs font-semibold text-emerald-500 uppercase tracking-widest mb-2">
-                Restaurantes ({selectedRestaurants.length})
-              </p>
+              <p className="text-xs font-semibold text-amber-500 uppercase tracking-widest mb-2">Almoço ({lunchSelected.length})</p>
               <div className="flex flex-col gap-2">
-                {selectedRestaurants.map((r, i) => (
+                {lunchSelected.map((r, i) => (
+                  <div key={i} className="bg-white rounded-xl border border-amber-100 p-4">
+                    <p className="font-semibold text-slate-800">{r.name}</p>
+                    <p className="text-sm text-slate-500">{r.cuisine} · {r.neighborhood}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Jantar */}
+          {dinnerSelected.length > 0 && (
+            <div className="mb-5">
+              <p className="text-xs font-semibold text-emerald-500 uppercase tracking-widest mb-2">Jantar ({dinnerSelected.length})</p>
+              <div className="flex flex-col gap-2">
+                {dinnerSelected.map((r, i) => (
                   <div key={i} className="bg-white rounded-xl border border-emerald-100 p-4">
                     <p className="font-semibold text-slate-800">{r.name}</p>
                     <p className="text-sm text-slate-500">{r.cuisine} · {r.neighborhood}</p>
@@ -634,16 +731,79 @@ export default function Home() {
             </div>
           )}
 
+          {/* Bares & vida noturna */}
+          {nightlifeSelected.length > 0 && (
+            <div className="mb-5">
+              <p className="text-xs font-semibold text-purple-500 uppercase tracking-widest mb-2">Bares & vida noturna ({nightlifeSelected.length})</p>
+              <div className="flex flex-col gap-2">
+                {nightlifeSelected.map((r, i) => (
+                  <div key={i} className="bg-white rounded-xl border border-purple-100 p-4">
+                    <p className="font-semibold text-slate-800">{r.name}</p>
+                    <p className="text-sm text-slate-500">{r.cuisine} · {r.neighborhood}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Atrações */}
           {selectedAttractions.length > 0 && (
-            <div>
-              <p className="text-xs font-semibold text-violet-500 uppercase tracking-widest mb-2">
-                Atrações ({selectedAttractions.length})
-              </p>
+            <div className="mb-6">
+              <p className="text-xs font-semibold text-violet-500 uppercase tracking-widest mb-2">Atrações ({selectedAttractions.length})</p>
               <div className="flex flex-col gap-2">
                 {selectedAttractions.map((a, i) => (
                   <div key={i} className="bg-white rounded-xl border border-violet-100 p-4">
                     <p className="font-semibold text-slate-800">{a.name}</p>
-                    <p className="text-sm text-slate-500">{a.type} · {a.neighborhood}</p>
+                    <p className="text-sm text-slate-500">{a.type} · {a.neighborhood} · {a.duration}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Botão gerar roteiro */}
+          {summary && (
+            <button
+              onClick={handleGenerateCustomItinerary}
+              className="w-full rounded-xl bg-blue-600 py-3 text-white font-semibold text-base hover:bg-blue-700 active:bg-blue-800 transition-colors"
+            >
+              Gerar roteiro da minha viagem
+            </button>
+          )}
+
+          {/* Roteiro personalizado */}
+          {customItinerary.length > 0 && (
+            <div className="mt-8">
+              <p className="text-xs font-semibold text-blue-500 uppercase tracking-widest mb-3">Roteiro</p>
+              <h3 className="text-lg font-semibold text-slate-700 mb-4">Roteiro personalizado — {summary?.duration} {summary?.duration === 1 ? 'dia' : 'dias'}</h3>
+              <div className="flex flex-col gap-5">
+                {customItinerary.map(day => (
+                  <div key={day.day} className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+                    <div className="px-6 py-4 bg-slate-50 border-b border-slate-100">
+                      <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Dia {day.day}</p>
+                      <p className="text-base font-bold text-slate-800">{day.label}</p>
+                    </div>
+                    <div className="divide-y divide-slate-50">
+                      {day.slots.map(slot => (
+                        <div key={slot.period} className="px-6 py-4 flex gap-4">
+                          <div className="shrink-0 w-14 pt-0.5">
+                            <span className={`text-xs font-bold uppercase ${
+                              slot.period === 'Manhã'  ? 'text-amber-500'   :
+                              slot.period === 'Almoço' ? 'text-emerald-500' :
+                              slot.period === 'Tarde'  ? 'text-violet-500'  :
+                                                         'text-blue-500'
+                            }`}>
+                              {slot.period}
+                            </span>
+                          </div>
+                          <div className="flex-1">
+                            <p className="font-semibold text-slate-800 text-sm">{slot.title}</p>
+                            <p className="text-xs text-slate-400 mb-1">{slot.subtitle}</p>
+                            <p className="text-xs text-slate-500 leading-relaxed">{slot.note}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 ))}
               </div>
