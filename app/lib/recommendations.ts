@@ -388,6 +388,7 @@ export type Restaurant = {
   reviewCount: number
   reviewSnippet: string
   imageUrl: string
+  type?: 'restaurant' | 'bar' | 'rooftop' | 'nightlife'
 }
 
 // ── Attraction ────────────────────────────────────────────────────────────────
@@ -541,6 +542,45 @@ const CITY_EXTRAS: Record<string, { restaurants: Restaurant[]; attractions: Attr
         reviewCount: 19847,
         reviewSnippet: 'O gelato de figo com nozes mudou minha relação com sorvete para sempre.',
         imageUrl: 'https://images.unsplash.com/photo-1567206563114-c083777f1eaa?w=600&h=220&fit=crop&q=80&auto=format',
+      },
+      {
+        name: 'Bar San Calisto',
+        cuisine: 'Bar local — aperitivos e coquetéis',
+        neighborhood: 'Trastevere',
+        priceRange: '€',
+        rating: 4.5,
+        type: 'bar',
+        mealType: 'dinner',
+        description: 'O bar mais icônico do Trastevere, frequentado por estudantes e romanos de verdade. Sambuca, Peroni gelada e mesas na calçada até meia-noite — sem pretensão alguma.',
+        reviewCount: 7821,
+        reviewSnippet: 'Cheguei às 18h e saí à 1h — é impossível ir só por uma bebida.',
+        imageUrl: 'https://images.unsplash.com/photo-1559339600-cf57e5a3b49b?w=600&h=220&fit=crop&q=80&auto=format',
+      },
+      {
+        name: 'Salotto 42',
+        cuisine: 'Rooftop bar — aperitivo com vista',
+        neighborhood: 'Centro Histórico',
+        priceRange: '€€€',
+        rating: 4.7,
+        type: 'rooftop',
+        mealType: 'dinner',
+        description: 'Rooftop bar de design com vista direta para o Pantheon. Aperitivo clássico com coquetéis artesanais e música ambiente — ideal para o final de tarde romano.',
+        reviewCount: 4312,
+        reviewSnippet: 'Tomar um Aperol Spritz olhando para o Pantheon ao pôr do sol é uma das experiências mais bonitas de Roma.',
+        imageUrl: 'https://images.unsplash.com/photo-1558618047-3d27a507f25c?w=600&h=220&fit=crop&q=80&auto=format',
+      },
+      {
+        name: 'Goa Club',
+        cuisine: 'Clube noturno — música eletrônica',
+        neighborhood: 'Testaccio',
+        priceRange: '€€',
+        rating: 4.5,
+        type: 'nightlife',
+        mealType: 'dinner',
+        description: 'O clube de música eletrônica mais respeitado de Roma, no bairro Testaccio. DJs internacionais e pista de dança impecável — chegue depois da meia-noite.',
+        reviewCount: 5234,
+        reviewSnippet: 'Melhor som e pista de Roma — a vibe italiana na pista é algo diferente.',
+        imageUrl: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=600&h=220&fit=crop&q=80&auto=format',
       },
     ],
     attractions: [
@@ -779,6 +819,45 @@ const CITY_EXTRAS: Record<string, { restaurants: Restaurant[]; attractions: Attr
         reviewSnippet: 'Um curry que resiste ao tempo — e que entende os dois mundos que mistura.',
         imageUrl: 'https://images.unsplash.com/photo-1585937421612-70a008356fbe?w=600&h=220&fit=crop&q=80&auto=format',
       },
+      {
+        name: 'Golden Gai',
+        cuisine: 'Bar — vielas históricas de Shinjuku',
+        neighborhood: 'Shinjuku',
+        priceRange: '¥¥',
+        rating: 4.7,
+        type: 'bar',
+        mealType: 'dinner',
+        description: 'Labirinto de 200 micro-bares em vielas de Shinjuku, cada um com 5 a 10 lugares, decoração única e atmosfera de outro tempo. Imperdível para entender a alma noturna de Tóquio.',
+        reviewCount: 28341,
+        reviewSnippet: 'Sentei num bar de 6 lugares, fiz amigos japoneses e passei três horas lá — isso é Tóquio.',
+        imageUrl: 'https://images.unsplash.com/photo-1540866225-877a15ca0f21?w=600&h=220&fit=crop&q=80&auto=format',
+      },
+      {
+        name: 'New York Bar — Park Hyatt',
+        cuisine: 'Rooftop bar — jazz e vista panorâmica',
+        neighborhood: 'Shinjuku',
+        priceRange: '¥¥¥¥',
+        rating: 4.8,
+        type: 'rooftop',
+        mealType: 'dinner',
+        description: 'O bar do 52º andar do Park Hyatt, eternizado no filme Lost in Translation. Jazz ao vivo, coquetéis elegantes e a vista mais deslumbrante do skyline de Tóquio ao anoitecer.',
+        reviewCount: 9843,
+        reviewSnippet: 'Sentir que estou dentro do filme foi inevitável — a vista e o ambiente são inigualáveis.',
+        imageUrl: 'https://images.unsplash.com/photo-1570173614-2d1a45a4babe?w=600&h=220&fit=crop&q=80&auto=format',
+      },
+      {
+        name: 'Womb Club',
+        cuisine: 'Clube noturno — house e techno',
+        neighborhood: 'Shibuya',
+        priceRange: '¥¥',
+        rating: 4.6,
+        type: 'nightlife',
+        mealType: 'dinner',
+        description: 'O clube mais famoso de Tóquio, com 4 andares e sistema de som de referência mundial. DJs internacionais toda semana — aberto sexta e sábado até as 6h da manhã.',
+        reviewCount: 18423,
+        reviewSnippet: 'O melhor clube que já fui. O sistema de som e a multidão japonesa tornam tudo único.',
+        imageUrl: 'https://images.unsplash.com/photo-1488188840519-1db48eaec0de?w=600&h=220&fit=crop&q=80&auto=format',
+      },
     ],
     attractions: [
       {
@@ -992,22 +1071,37 @@ export function getRestaurants(text: string): Restaurant[] {
   const hasAmigos = objectives.includes('amigos')
   const hasRomantico = objectives.includes('romantico')
   const hasFamilia = objectives.includes('familia')
+  const hasDescanso = objectives.includes('descanso')
   const wantsLunch = /almoço|almoçar|lunch/.test(t)
   const wantsDinner = /jantar|dinner/.test(t)
 
-  const scored = restaurants.map(r => {
+  // Nightlife/bar filtering: exclude when objectives incompatible
+  const avoidNightlife = !hasAmigos && (hasFamilia || hasDescanso)
+  const filtered = restaurants.filter(r => {
+    const vType = r.type ?? 'restaurant'
+    if (vType === 'nightlife' && !hasAmigos) return false
+    if (vType === 'bar' && avoidNightlife) return false
+    return true
+  })
+
+  const scored = filtered.map(r => {
+    const vType = r.type ?? 'restaurant'
     let score = 0
     if (hasGastronomy) score += 2                            // +2 atende objetivo gastronomia
     if (hasGastronomy && objectives.length > 1) score += 1  // +1 múltiplos objetivos
     if (relevantNeighborhoods.has(r.neighborhood.toLowerCase())) score += 1  // +1 bairro relevante
     if (quality === 'high' && r.rating >= 4.7) score += 1
     if (quality === 'low' && r.priceRange.length <= 1) score += 1  // € = tier mais barato
-    // Objetivo amigos: lugares populares e animados (jantar/noite)
+    // Objetivo amigos: priorizar bares, rooftops e vida noturna
+    if (hasAmigos && (vType === 'bar' || vType === 'nightlife')) score += 3
+    if (hasAmigos && vType === 'rooftop') score += 2
     if (hasAmigos && r.reviewCount >= 10000) score += 1
     if (hasAmigos && (r.mealType === 'dinner' || r.mealType === 'both')) score += 1
-    // Objetivo romântico: jantar em lugares especiais (alta avaliação)
+    // Objetivo romântico: rooftop e jantar especial com alta avaliação
+    if (hasRomantico && vType === 'rooftop') score += 2
     if (hasRomantico && r.rating >= 4.8 && (r.mealType === 'dinner' || r.mealType === 'both')) score += 2
-    // Objetivo família: almoço e preço acessível
+    // Objetivo família/descanso: preferir restaurantes tranquilos no almoço
+    if ((hasFamilia || hasDescanso) && vType === 'restaurant') score += 1
     if (hasFamilia && (r.mealType === 'lunch' || r.mealType === 'both')) score += 1
     if (hasFamilia && r.priceRange.length <= 2) score += 1  // € ou €€
     // +1 se restaurante combina com o momento mencionado pelo usuário
