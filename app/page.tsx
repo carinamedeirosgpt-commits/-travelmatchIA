@@ -44,6 +44,22 @@ function ObjectiveTag({ objectives }: { objectives: string[] }) {
   )
 }
 
+const VENUE_TYPE_CONFIG: Record<string, { label: string; cls: string }> = {
+  restaurant: { label: 'Restaurante', cls: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+  bar:        { label: 'Bar',         cls: 'bg-purple-50 text-purple-700 border-purple-200' },
+  rooftop:    { label: 'Rooftop',     cls: 'bg-sky-50 text-sky-700 border-sky-200' },
+  nightlife:  { label: 'Balada',      cls: 'bg-rose-50 text-rose-700 border-rose-200' },
+}
+
+function VenueTypeBadge({ type }: { type?: string }) {
+  const cfg = VENUE_TYPE_CONFIG[type ?? 'restaurant'] ?? VENUE_TYPE_CONFIG.restaurant
+  return (
+    <span className={`inline-block text-xs font-semibold px-2 py-0.5 rounded border ${cfg.cls}`}>
+      {cfg.label}
+    </span>
+  )
+}
+
 function buildCustomItinerary(
   hotel: Recommendation | null,
   restaurants: Restaurant[],
@@ -146,7 +162,10 @@ function SwipeCard({
           <div className="flex items-start justify-between gap-4">
             <div>
               <h3 className="text-lg font-bold text-slate-900">{r.name}</h3>
-              <p className="text-slate-500 text-sm">{r.cuisine} · {r.neighborhood}</p>
+              <div className="flex items-center gap-2 flex-wrap mt-0.5">
+                <VenueTypeBadge type={r.type} />
+                <span className="text-slate-500 text-sm">{r.cuisine} · {r.neighborhood}</span>
+              </div>
             </div>
             <span className="shrink-0 text-emerald-700 font-bold text-base bg-emerald-50 rounded-lg px-3 py-1">
               {r.priceRange}
@@ -352,6 +371,7 @@ export default function Home() {
   const currentDinner = dinnerPool[dinnerCursor] ?? null
   const lunchDone = lunchPool.length > 0 && lunchCursor >= lunchPool.length
   const dinnerDone = dinnerPool.length > 0 && dinnerCursor >= dinnerPool.length
+  const hasNightlifeInDinnerPool = dinnerPool.some(r => r.type === 'bar' || r.type === 'rooftop' || r.type === 'nightlife')
 
   function acceptLunch(r: Restaurant) {
     setSelectedRestaurants(prev => [...prev, r])
@@ -528,7 +548,7 @@ export default function Home() {
 
       {step === 2 && (
         <div className="w-full max-w-2xl mt-6">
-          <NextStepButton label="Ver restaurantes sugeridos" onClick={() => setStep(3)} />
+          <NextStepButton label="Ver comida & vida noturna" onClick={() => setStep(3)} />
         </div>
       )}
 
@@ -537,8 +557,8 @@ export default function Home() {
         <div className="w-full max-w-2xl mt-10">
           <StepHeader
             number={2}
-            title="Restaurantes sugeridos"
-            subtitle="Aceite ou recuse sugestões de almoço e jantar"
+            title="Comida & vida noturna"
+            subtitle="Aceite ou recuse sugestões de comida e experiências da noite"
           />
           {restaurantPool.length === 0 ? (
             <p className="text-slate-500 text-sm">Nenhum restaurante encontrado para este destino ainda.</p>
@@ -569,12 +589,16 @@ export default function Home() {
                 )}
               </div>
 
-              {/* ── Jantar ── */}
+              {/* ── Jantar & noite ── */}
               <div>
-                <p className="text-xs font-semibold text-blue-500 uppercase tracking-widest mb-4">Jantar</p>
+                <p className="text-xs font-semibold text-blue-500 uppercase tracking-widest mb-4">
+                  {hasNightlifeInDinnerPool ? 'Jantar & noite' : 'Jantar'}
+                </p>
                 {dinnerDone ? (
                   <div className="bg-slate-50 border border-slate-200 rounded-2xl p-6 text-center">
-                    <p className="font-semibold text-slate-600 text-sm">Sugestões de jantar revisadas</p>
+                    <p className="font-semibold text-slate-600 text-sm">
+                      {hasNightlifeInDinnerPool ? 'Sugestões de jantar & noite revisadas' : 'Sugestões de jantar revisadas'}
+                    </p>
                     <p className="text-xs text-slate-400 mt-1">
                       {selectedRestaurants.filter(r => r.mealType === 'dinner' || r.mealType === 'both').length} aceito(s)
                     </p>
