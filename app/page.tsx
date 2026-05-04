@@ -14,18 +14,49 @@ import {
   generateItinerary,
 } from './lib/recommendations'
 
+const OBJECTIVE_TAGS: Record<string, { label: string; cls: string }> = {
+  'Romântico':             { label: 'Perfeito para viagem romântica — ambiente charmoso e íntimo',       cls: 'bg-pink-50 text-pink-700 border-pink-200' },
+  'Família':               { label: 'Ideal para família — região segura e bem localizada',               cls: 'bg-amber-50 text-amber-700 border-amber-200' },
+  'Amigos & vida noturna': { label: 'Ótimo para curtir com amigos — perto de bares e vida noturna',     cls: 'bg-purple-50 text-purple-700 border-purple-200' },
+  'Descanso':              { label: 'Perfeito para relaxar — área tranquila e confortável',              cls: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+  'Esportes':              { label: 'Indicado para fãs de esportes — fácil acesso a eventos',           cls: 'bg-green-50 text-green-700 border-green-200' },
+  'Compras':               { label: 'Ótimo para compras — perto dos melhores centros comerciais',       cls: 'bg-sky-50 text-sky-700 border-sky-200' },
+  'Gastronomia':           { label: 'Para quem ama gastronomia — região com ótimos restaurantes',       cls: 'bg-orange-50 text-orange-700 border-orange-200' },
+  'Turismo':               { label: 'Ideal para turismo — perto das principais atrações',               cls: 'bg-blue-50 text-blue-700 border-blue-200' },
+  'Negócios':              { label: 'Prático para negócios — localização estratégica',                  cls: 'bg-slate-100 text-slate-600 border-slate-300' },
+}
+
+const OBJECTIVE_PRIORITY = [
+  'Romântico', 'Família', 'Amigos & vida noturna', 'Descanso',
+  'Esportes', 'Compras', 'Gastronomia', 'Turismo', 'Negócios',
+]
+
+function ObjectiveTag({ objectives }: { objectives: string[] }) {
+  const primary = OBJECTIVE_PRIORITY.find(o => objectives.includes(o))
+  if (!primary) return null
+  const tag = OBJECTIVE_TAGS[primary]
+  if (!tag) return null
+  return (
+    <p className={`text-xs font-medium px-3 py-1.5 rounded-lg border ${tag.cls}`}>
+      {tag.label}
+    </p>
+  )
+}
+
 function SwipeCard({
   restaurant: r,
   cursor,
   poolSize,
   onAccept,
   onRefuse,
+  objectives = [],
 }: {
   restaurant: Restaurant
   cursor: number
   poolSize: number
   onAccept: () => void
   onRefuse: () => void
+  objectives?: string[]
 }) {
   return (
     <div className="flex flex-col gap-4">
@@ -60,6 +91,7 @@ function SwipeCard({
             <Stars rating={r.rating} />
             <span className="text-xs text-slate-400">{r.reviewCount.toLocaleString('pt-BR')} avaliações</span>
           </div>
+          <ObjectiveTag objectives={objectives} />
           {r.reviewSnippet && (
             <p className="text-xs text-slate-500 italic border-l-2 border-emerald-200 pl-3">
               &ldquo;{r.reviewSnippet}&rdquo;
@@ -94,12 +126,14 @@ function AttractionSwipeCard({
   poolSize,
   onAccept,
   onRefuse,
+  objectives = [],
 }: {
   attraction: Attraction
   cursor: number
   poolSize: number
   onAccept: () => void
   onRefuse: () => void
+  objectives?: string[]
 }) {
   return (
     <div className="flex flex-col gap-4">
@@ -126,6 +160,7 @@ function AttractionSwipeCard({
               {a.duration}
             </span>
           </div>
+          <ObjectiveTag objectives={objectives} />
           {a.reviewSnippet && (
             <p className="text-xs text-slate-500 italic border-l-2 border-violet-200 pl-3">
               &ldquo;{a.reviewSnippet}&rdquo;
@@ -378,6 +413,7 @@ export default function Home() {
                     <Stars rating={rec.rating} />
                     <span className="text-xs text-slate-400">{rec.reviewCount.toLocaleString('pt-BR')} avaliações</span>
                   </div>
+                  <ObjectiveTag objectives={summary?.objectives ?? []} />
                   {rec.reviewSnippet && (
                     <p className="text-xs text-slate-500 italic border-l-2 border-blue-200 pl-3">
                       &ldquo;{rec.reviewSnippet}&rdquo;
@@ -449,6 +485,7 @@ export default function Home() {
                     poolSize={lunchPool.length}
                     onAccept={() => acceptLunch(currentLunch)}
                     onRefuse={refuseLunch}
+                    objectives={summary?.objectives ?? []}
                   />
                 )}
               </div>
@@ -472,6 +509,7 @@ export default function Home() {
                     poolSize={dinnerPool.length}
                     onAccept={() => acceptDinner(currentDinner)}
                     onRefuse={refuseDinner}
+                    objectives={summary?.objectives ?? []}
                   />
                 )}
               </div>
@@ -509,6 +547,7 @@ export default function Home() {
               poolSize={attractionPool.length}
               onAccept={() => acceptAttraction(currentAttraction)}
               onRefuse={refuseAttraction}
+              objectives={summary?.objectives ?? []}
             />
           )}
         </div>
