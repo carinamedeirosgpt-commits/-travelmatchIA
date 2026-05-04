@@ -3,18 +3,24 @@ const OBJECTIVE_LABELS: Record<string, string> = {
   trabalho:    'viagem de negócios',
   descanso:    'descanso',
   gastronomia: 'gastronomia',
-  festa:       'vida noturna',
+  amigos:      'amigos & vida noturna',
   familia:     'viagem em família',
+  romantico:   'viagem romântica',
+  compras:     'compras',
+  esportes:    'esportes',
 }
 
 function detectObjective(text: string): string {
   const t = text.toLowerCase()
   if (/trabalho|negócio|reunião|conferência|congresso|business/.test(t)) return 'trabalho'
   if (/descanso|relaxar|tranquil|spa|paz|sossego/.test(t)) return 'descanso'
-  if (/turismo|pontos? turísticos?|sightseeing|conhecer|visitar|museu|galeria|templo|monumento|atração/.test(t)) return 'turismo'
-  if (/gastronomia|restaurante|culinária|comida|food|comer/.test(t)) return 'gastronomia'
-  if (/festa|balada|noite|bares|vida noturna|pub|club/.test(t)) return 'festa'
+  if (/romântico|romantico|casal|lua de mel|honeymoon/.test(t)) return 'romantico'
   if (/família|criança|kids|filho|filha|bebê/.test(t)) return 'familia'
+  if (/futebol|jogo|estádio|esporte/.test(t)) return 'esportes'
+  if (/compras|shopping|lojas/.test(t)) return 'compras'
+  if (/amigos|curtir|balada|bar|sair à noite|vida noturna|pub|club|festa/.test(t)) return 'amigos'
+  if (/gastronomia|restaurante|culinária|comida|food|comer/.test(t)) return 'gastronomia'
+  if (/turismo|pontos? turísticos?|sightseeing|conhecer|visitar|museu|galeria|templo|monumento|atração/.test(t)) return 'turismo'
   return 'turismo'
 }
 
@@ -24,10 +30,13 @@ function detectObjectives(text: string): string[] {
   const found: string[] = []
   if (/trabalho|negócio|reunião|conferência|congresso|business/.test(t)) found.push('trabalho')
   if (/descanso|relaxar|tranquil|spa|paz|sossego/.test(t)) found.push('descanso')
-  if (/turismo|pontos? turísticos?|sightseeing|conhecer|visitar|museu|galeria|templo|monumento|atração/.test(t)) found.push('turismo')
-  if (/gastronomia|restaurante|culinária|comida|food|comer/.test(t)) found.push('gastronomia')
-  if (/festa|balada|noite|bares|vida noturna|pub|club/.test(t)) found.push('festa')
+  if (/romântico|romantico|casal|lua de mel|honeymoon/.test(t)) found.push('romantico')
   if (/família|criança|kids|filho|filha|bebê/.test(t)) found.push('familia')
+  if (/futebol|jogo|estádio|esporte/.test(t)) found.push('esportes')
+  if (/compras|shopping|lojas/.test(t)) found.push('compras')
+  if (/amigos|curtir|balada|bar|sair à noite|vida noturna|pub|club|festa/.test(t)) found.push('amigos')
+  if (/gastronomia|restaurante|culinária|comida|food|comer/.test(t)) found.push('gastronomia')
+  if (/turismo|pontos? turísticos?|sightseeing|conhecer|visitar|museu|galeria|templo|monumento|atração/.test(t)) found.push('turismo')
   return found.length > 0 ? found : ['turismo']
 }
 
@@ -160,8 +169,11 @@ export const CITIES: Record<string, CityConfig> = {
       trabalho:    ['centro', 'prati', 'monti'],
       descanso:    ['parioli', 'trastevere', 'monti'],
       gastronomia: ['trastevere', 'monti', 'centro'],
-      festa:       ['trastevere', 'centro', 'monti'],
+      amigos:      ['trastevere', 'centro', 'monti'],
       familia:     ['prati', 'centro', 'monti'],
+      romantico:   ['trastevere', 'parioli', 'centro'],
+      compras:     ['centro', 'prati', 'monti'],
+      esportes:    ['monti', 'testaccio', 'centro'],
     },
   },
 
@@ -240,10 +252,13 @@ export const CITIES: Record<string, CityConfig> = {
     objectiveDefaults: {
       turismo:     ['asakusa', 'ginza', 'shinjuku'],
       trabalho:    ['ginza', 'shinjuku', 'shibuya'],
-      descanso:    ['asakusa', 'ginza', 'shinjuku'],
+      descanso:    ['asakusa', 'harajuku', 'shinjuku'],
       gastronomia: ['ginza', 'shinjuku', 'asakusa'],
-      festa:       ['shinjuku', 'shibuya', 'ginza'],
-      familia:     ['asakusa', 'shinjuku', 'harajuku'],
+      amigos:      ['shinjuku', 'shibuya', 'harajuku'],
+      familia:     ['asakusa', 'harajuku', 'shinjuku'],
+      romantico:   ['ginza', 'asakusa', 'harajuku'],
+      compras:     ['ginza', 'harajuku', 'shinjuku'],
+      esportes:    ['shinjuku', 'shibuya', 'akihabara'],
     },
   },
 }
@@ -336,6 +351,10 @@ export function getRecommendations(text: string): Recommendation[] {
       let score = baseScore
       if (quality === 'high' && hotel.rating >= 4.7) score += 1
       if (quality === 'low' && hotel.rating < 4.5) score += 1
+      // Objective-specific hotel boosts
+      if (objectives.includes('romantico') && hotel.rating >= 4.8) score += 1
+      if (objectives.includes('descanso') && hotel.rating >= 4.7) score += 1
+      if (objectives.includes('familia') && hotel.reviewCount >= 3000) score += 1
 
       scored.push({
         score,
@@ -898,10 +917,13 @@ export function parseTripSummary(text: string): TripSummary {
   const objectives: string[] = []
   if (/trabalho|negócio|reunião|conferência|congresso|business/.test(t)) objectives.push('Negócios')
   if (/descanso|relaxar|tranquil|spa|paz|sossego/.test(t)) objectives.push('Descanso')
-  if (/turismo|pontos? turísticos?|sightseeing|conhecer|visitar|museu|galeria|templo|monumento|atração/.test(t)) objectives.push('Turismo')
-  if (/gastronomia|restaurante|culinária|comida|food|comer/.test(t)) objectives.push('Gastronomia')
-  if (/festa|balada|noite|bares|vida noturna|pub|club/.test(t)) objectives.push('Vida noturna')
+  if (/romântico|romantico|casal|lua de mel|honeymoon/.test(t)) objectives.push('Romântico')
   if (/família|criança|kids|filho|filha|bebê/.test(t)) objectives.push('Família')
+  if (/futebol|jogo|estádio|esporte/.test(t)) objectives.push('Esportes')
+  if (/compras|shopping|lojas/.test(t)) objectives.push('Compras')
+  if (/amigos|curtir|balada|bar|sair à noite|vida noturna|pub|club|festa/.test(t)) objectives.push('Amigos & vida noturna')
+  if (/gastronomia|restaurante|culinária|comida|food|comer/.test(t)) objectives.push('Gastronomia')
+  if (/turismo|pontos? turísticos?|sightseeing|conhecer|visitar|museu|galeria|templo|monumento|atração/.test(t)) objectives.push('Turismo')
   if (objectives.length === 0) objectives.push('Turismo')
 
   // Preferences
@@ -967,6 +989,9 @@ export function getRestaurants(text: string): Restaurant[] {
   }
 
   const hasGastronomy = objectives.includes('gastronomia')
+  const hasAmigos = objectives.includes('amigos')
+  const hasRomantico = objectives.includes('romantico')
+  const hasFamilia = objectives.includes('familia')
   const wantsLunch = /almoço|almoçar|lunch/.test(t)
   const wantsDinner = /jantar|dinner/.test(t)
 
@@ -977,6 +1002,14 @@ export function getRestaurants(text: string): Restaurant[] {
     if (relevantNeighborhoods.has(r.neighborhood.toLowerCase())) score += 1  // +1 bairro relevante
     if (quality === 'high' && r.rating >= 4.7) score += 1
     if (quality === 'low' && r.priceRange.length <= 1) score += 1  // € = tier mais barato
+    // Objetivo amigos: lugares populares e animados (jantar/noite)
+    if (hasAmigos && r.reviewCount >= 10000) score += 1
+    if (hasAmigos && (r.mealType === 'dinner' || r.mealType === 'both')) score += 1
+    // Objetivo romântico: jantar em lugares especiais (alta avaliação)
+    if (hasRomantico && r.rating >= 4.8 && (r.mealType === 'dinner' || r.mealType === 'both')) score += 2
+    // Objetivo família: almoço e preço acessível
+    if (hasFamilia && (r.mealType === 'lunch' || r.mealType === 'both')) score += 1
+    if (hasFamilia && r.priceRange.length <= 2) score += 1  // € ou €€
     // +1 se restaurante combina com o momento mencionado pelo usuário
     if (wantsLunch && (r.mealType === 'lunch' || r.mealType === 'both')) score += 1
     if (wantsDinner && (r.mealType === 'dinner' || r.mealType === 'both')) score += 1
@@ -1015,6 +1048,11 @@ export function getAttractions(text: string): Attraction[] {
   }
 
   const hasTurismo = objectives.includes('turismo')
+  const hasAmigos = objectives.includes('amigos')
+  const hasRomantico = objectives.includes('romantico')
+  const hasFamilia = objectives.includes('familia')
+  const hasDescanso = objectives.includes('descanso')
+  const hasCompras = objectives.includes('compras')
 
   const scored = attractions.map(a => {
     let score = 0
@@ -1023,6 +1061,19 @@ export function getAttractions(text: string): Attraction[] {
     if (relevantNeighborhoods.has(a.neighborhood.toLowerCase())) score += 1  // +1 bairro relevante
     if (mentionedNeighborhoods.has(a.neighborhood.toLowerCase())) score += 2 // +2 POI mencionado
     if (a.reviewCount >= 30000) score += 1                 // +1 atração muito popular
+    const desc = (a.type + ' ' + a.description).toLowerCase()
+    // Objetivo amigos: atividades noturnas e agitadas
+    if (hasAmigos && /noite|anoitecer|noturna|praça|vida/.test(desc)) score += 1
+    // Objetivo romântico: vistas, jardins, pôr do sol, lugares icônicos
+    if (hasRomantico && /vista|pôr do sol|jardim|panorâm|beleza|bonito/.test(desc)) score += 2
+    if (hasRomantico && a.reviewCount >= 20000) score += 1  // lugares populares são seguros para casal
+    // Objetivo família: parques, jardins, museus, entradas grátis
+    if (hasFamilia && /parque|jardim|zoo|planetário/.test(desc)) score += 2
+    if (hasFamilia && /grátis/.test(a.price.toLowerCase())) score += 1
+    // Objetivo descanso: espaços tranquilos
+    if (hasDescanso && /jardim|parque|tranquil|silencio|floresta/.test(desc)) score += 2
+    // Objetivo compras: mercados e bairros de lojas
+    if (hasCompras && /mercado|shopping|loja|moda|compras/.test(desc)) score += 2
     return { a, score }
   })
 
